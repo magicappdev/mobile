@@ -200,23 +200,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const loginWithGitHub = async () => {
-    // Use custom URL scheme for mobile OAuth callback
-    const authUrl =
-      api.getGitHubLoginUrl("mobile") +
-      "&redirect_uri=" +
-      encodeURIComponent("magicappdev://auth/callback");
-    // Open OAuth in browser for mobile
-    await Browser.open({ url: authUrl });
+    try {
+      // Use custom URL scheme for mobile OAuth callback
+      const authUrl =
+        api.getGitHubLoginUrl("mobile") +
+        "&redirect_uri=" +
+        encodeURIComponent("magicappdev://auth/callback");
+      // Open OAuth in browser for mobile
+      await Browser.open({ url: authUrl });
+    } catch (error) {
+      console.error("Failed to open browser for GitHub login:", error);
+      alert("Unable to open GitHub login. Please try again.");
+    }
   };
 
   const loginWithDiscord = async () => {
-    // Use custom URL scheme for mobile OAuth callback
-    const authUrl =
-      api.getDiscordLoginUrl("mobile") +
-      "&redirect_uri=" +
-      encodeURIComponent("magicappdev://auth/callback");
-    // Open OAuth in browser for mobile
-    await Browser.open({ url: authUrl });
+    try {
+      // Use custom URL scheme for mobile OAuth callback
+      const authUrl =
+        api.getDiscordLoginUrl("mobile") +
+        "&redirect_uri=" +
+        encodeURIComponent("magicappdev://auth/callback");
+      // Open OAuth in browser for mobile
+      await Browser.open({ url: authUrl });
+    } catch (error) {
+      console.error("Failed to open browser for Discord login:", error);
+      alert("Unable to open Discord login. Please try again.");
+    }
   };
 
   return (
