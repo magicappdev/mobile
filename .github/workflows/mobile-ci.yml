@@ -38,8 +38,6 @@ jobs:
       - name: Typecheck mobile app
         run: npm run typecheck
 
-
-
   build-android:
     name: Build Android APK
     runs-on: ubuntu-latest
@@ -66,9 +64,8 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-
       - name: Sync Capacitor
-        run: npm run ionic:sync
+        run: npx ionic cap sync
 
       - name: Cache Gradle dependencies
         uses: actions/cache@d4323d4df104b026a6aa633fdb11d772146be0bf # v4.2.2

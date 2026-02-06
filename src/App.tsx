@@ -1,8 +1,11 @@
 import {
   IonApp,
+  IonContent,
   IonIcon,
   IonLabel,
+  IonPage,
   IonRouterOutlet,
+  IonSpinner,
   IonTabBar,
   IonTabButton,
   IonTabs,
@@ -46,8 +49,8 @@ import "@ionic/react/css/palettes/dark.system.css";
 import "./theme/variables.css";
 
 /* Context Providers */
-import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { NavigationProvider } from "./contexts/NavigationContext";
+import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { ThemeProvider } from "./contexts/ThemeContext";
 
 /* Pages */
@@ -69,89 +72,120 @@ import AdminLogs from "./pages/admin/Logs";
 setupIonicReact();
 
 /**
+ * Tabs Component
+ * Separated to ensure clean routing within the tab system
+ */
+const Tabs: React.FC = () => {
+  return (
+    <IonTabs>
+      <IonRouterOutlet>
+        <Route exact path="/tabs/home" component={Home} />
+        <Route exact path="/tabs/chat" component={Chat} />
+        <Route exact path="/tabs/projects" component={Projects} />
+        <Route exact path="/tabs/settings" component={Settings} />
+        <Route exact path="/tabs" render={() => <Redirect to="/tabs/home" />} />
+      </IonRouterOutlet>
+
+      <IonTabBar slot="bottom">
+        <IonTabButton tab="home" href="/tabs/home">
+          <IonIcon aria-hidden="true" icon={home} />
+          <IonLabel>Home</IonLabel>
+        </IonTabButton>
+        <IonTabButton tab="chat" href="/tabs/chat">
+          <IonIcon aria-hidden="true" icon={chatbubbleEllipses} />
+          <IonLabel>Chat</IonLabel>
+        </IonTabButton>
+        <IonTabButton tab="projects" href="/tabs/projects">
+          <IonIcon aria-hidden="true" icon={folder} />
+          <IonLabel>Projects</IonLabel>
+        </IonTabButton>
+        <IonTabButton tab="settings" href="/tabs/settings">
+          <IonIcon aria-hidden="true" icon={settings} />
+          <IonLabel>Settings</IonLabel>
+        </IonTabButton>
+      </IonTabBar>
+    </IonTabs>
+  );
+};
+
+/**
  * App Routes Component
  * Handles routing based on authentication state
  */
 const AppRoutes: React.FC = () => {
   const { user, isLoading } = useAuth();
 
+  console.log("AppRoutes: rendering, user:", !!user, "isLoading:", isLoading);
+
   if (isLoading) {
-    return null; // or a loading spinner
+    return (
+      <IonPage>
+        <IonContent>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              height: "100%",
+            }}
+          >
+            <IonSpinner name="crescent" />
+          </div>
+        </IonContent>
+      </IonPage>
+    );
   }
 
+  // Use user id as key to force a fresh router outlet when auth state changes
+  const routerKey = user ? `auth-${user.id}` : "unauth";
+
   return (
-    <IonTabs>
-      <IonRouterOutlet>
-        {/* Auth Routes */}
-        <Route exact path="/login">
-          <Login />
-        </Route>
-        <Route exact path="/register">
-          <Register />
-        </Route>
+    <IonRouterOutlet key={routerKey}>
+      {/* Auth Routes - only accessible when logged out */}
+      <Route exact path="/login">
+        {user ? <Redirect to="/tabs/home" /> : <Login />}
+      </Route>
+      <Route exact path="/register">
+        {user ? <Redirect to="/tabs/home" /> : <Register />}
+      </Route>
 
-        {/* Main Tab Routes */}
-        <Route exact path="/tabs/home">
-          <Home />
-        </Route>
-        <Route exact path="/tabs/chat">
-          <Chat />
-        </Route>
-        <Route exact path="/tabs/projects">
-          <Projects />
-        </Route>
-        <Route exact path="/tabs/settings">
-          <Settings />
-        </Route>
+      {/* Main Tab Routes - only accessible when logged in */}
+      <Route
+        path="/tabs"
+        render={() => (user ? <Tabs /> : <Redirect to="/login" />)}
+      />
 
-        {/* Admin Routes */}
-        <Route exact path="/admin/dashboard">
-          <AdminDashboard />
-        </Route>
-        <Route exact path="/admin/users">
-          <AdminUsers />
-        </Route>
-        <Route exact path="/admin/logs">
-          <AdminLogs />
-        </Route>
-        <Route exact path="/admin/api-keys">
-          <AdminApiKeys />
-        </Route>
-        <Route exact path="/admin/config">
-          <AdminConfig />
-        </Route>
-        <Route exact path="/admin/change-password">
-          <AdminChangePassword />
-        </Route>
+      {/* Admin Routes - only accessible when logged in */}
+      <Route
+        path="/admin"
+        render={() =>
+          user ? (
+            <IonRouterOutlet>
+              <Route exact path="/admin/dashboard" component={AdminDashboard} />
+              <Route exact path="/admin/users" component={AdminUsers} />
+              <Route exact path="/admin/logs" component={AdminLogs} />
+              <Route exact path="/admin/api-keys" component={AdminApiKeys} />
+              <Route exact path="/admin/config" component={AdminConfig} />
+              <Route
+                exact
+                path="/admin/change-password"
+                component={AdminChangePassword}
+              />
+            </IonRouterOutlet>
+          ) : (
+            <Redirect to="/login" />
+          )
+        }
+      />
 
-        {/* Redirect */}
-        <Route exact path="/">
-          <Redirect to={user ? "/tabs/home" : "/login"} />
-        </Route>
-      </IonRouterOutlet>
+      {/* Root Redirect */}
+      <Route exact path="/">
+        <Redirect to={user ? "/tabs/home" : "/login"} />
+      </Route>
 
-      {/* Tab Bar - only show when authenticated */}
-      {user && (
-        <IonTabBar slot="bottom">
-          <IonTabButton tab="home" href="/tabs/home">
-            <IonIcon aria-hidden="true" icon={home} />
-            <IonLabel>Home</IonLabel>
-          </IonTabButton>
-          <IonTabButton tab="chat" href="/tabs/chat">
-            <IonIcon aria-hidden="true" icon={chatbubbleEllipses} />
-            <IonLabel>Chat</IonLabel>
-          </IonTabButton>
-          <IonTabButton tab="projects" href="/tabs/projects">
-            <IonIcon aria-hidden="true" icon={folder} />
-            <IonLabel>Projects</IonLabel>
-          </IonTabButton>
-          <IonTabButton tab="settings" href="/tabs/settings">
-            <IonIcon aria-hidden="true" icon={settings} />
-            <IonLabel>Settings</IonLabel>
-          </IonTabButton>
-        </IonTabBar>
-      )}
-    </IonTabs>
+      {/* Fallback */}
+      <Route render={() => <Redirect to={user ? "/tabs/home" : "/login"} />} />
+    </IonRouterOutlet>
   );
 };
 

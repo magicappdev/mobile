@@ -24,8 +24,9 @@ import {
   IonToolbar,
 } from "@ionic/react";
 import { logoGithub, logoDiscord } from "ionicons/icons";
-import { useAuth } from "../contexts/AuthContext";
+import { Redirect, useHistory } from "react-router-dom";
 import React, { useEffect, useState } from "react";
+import { useAuth } from "../contexts/AuthContext";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -33,14 +34,24 @@ export default function Login() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { login, loginWithGitHub, loginWithDiscord, user } = useAuth();
+  const history = useHistory();
 
-  // Redirect is handled by AuthContext when user state changes
+  console.log("Login: rendering, user authenticated:", !!user);
+
+  // If user is already authenticated, redirect to home
   useEffect(() => {
     if (user) {
-      // User is logged in, AuthContext will handle navigation
-      console.log("Login: User authenticated, navigation will be handled by AuthContext");
+      console.log(
+        "Login: User detected in useEffect, navigating to /tabs/home...",
+      );
+      history.replace("/tabs/home");
     }
-  }, [user]);
+  }, [user, history]);
+
+  if (user) {
+    console.log("Login: Rendering Redirect to /tabs/home");
+    return <Redirect to="/tabs/home" />;
+  }
 
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault();
