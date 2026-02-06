@@ -27,7 +27,7 @@ interface ApiErrorData {
     | string;
 }
 
-type ApiResponse<T = unknown> = ApiSuccessResponse<T> | ApiErrorResponse;
+export type ApiResponse<T = unknown> = ApiSuccessResponse<T> | ApiErrorResponse;
 
 export class ApiClient {
   baseUrl: string;

@@ -12,7 +12,7 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { storage } from "../lib/storage";
 import type { User } from "../types";
-import { api } from "../lib/api";
+import { api, type ApiResponse } from "../lib/api";
 
 interface AuthContextType {
   user: User | null;
@@ -59,10 +59,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const login = async (email: string, password: string) => {
     setIsLoading(true);
     try {
-      const response = await api.login({ email, password });
+      const response = (await api.login({ email, password })) as ApiResponse<{
+        accessToken: string;
+        refreshToken: string;
+      }>;
       if (response.success) {
         await saveTokens(response.data.accessToken, response.data.refreshToken);
-      } else if (response.success === false) {
+      } else {
         throw new Error(response.error.message || "Login failed");
       }
     } catch (e: unknown) {
