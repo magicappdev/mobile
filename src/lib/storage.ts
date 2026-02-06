@@ -2,11 +2,10 @@
  * Storage Adapter for Capacitor/Web
  *
  * Provides a simple async storage interface using localStorage for web
- * and Capacitor Preferences for native platforms (when in native context).
- *
- * For development in browser, uses localStorage directly.
- * For production on native, can use Capacitor Preferences from @capacitor/core.
+ * and Capacitor Preferences for native platforms.
  */
+
+import { Preferences } from "@capacitor/preferences";
 
 export const storage = {
   /**
@@ -14,11 +13,21 @@ export const storage = {
    */
   async getItem(key: string): Promise<string | null> {
     try {
-      // Use localStorage for web (development and production web)
+      // Use Capacitor Preferences for native platforms
+      const { value } = await Preferences.get({ key });
+      if (value !== null) {
+        return value;
+      }
+      // Fall back to localStorage for web
       return localStorage.getItem(key);
     } catch (e) {
       console.error(`Failed to get ${key}`, e);
-      return null;
+      // Fall back to localStorage on error
+      try {
+        return localStorage.getItem(key);
+      } catch {
+        return null;
+      }
     }
   },
 
@@ -27,10 +36,18 @@ export const storage = {
    */
   async setItem(key: string, value: string): Promise<void> {
     try {
+      // Use Capacitor Preferences for native platforms
+      await Preferences.set({ key, value });
+      // Also set in localStorage as backup
       localStorage.setItem(key, value);
     } catch (e) {
       console.error(`Failed to set ${key}`, e);
-      throw e;
+      // Fall back to localStorage only
+      try {
+        localStorage.setItem(key, value);
+      } catch {
+        throw e;
+      }
     }
   },
 
@@ -39,10 +56,18 @@ export const storage = {
    */
   async removeItem(key: string): Promise<void> {
     try {
+      // Remove from Capacitor Preferences
+      await Preferences.remove({ key });
+      // Also remove from localStorage
       localStorage.removeItem(key);
     } catch (e) {
       console.error(`Failed to remove ${key}`, e);
-      throw e;
+      // Fall back to localStorage only
+      try {
+        localStorage.removeItem(key);
+      } catch {
+        throw e;
+      }
     }
   },
 
@@ -51,10 +76,18 @@ export const storage = {
    */
   async clear(): Promise<void> {
     try {
+      // Clear Capacitor Preferences
+      await Preferences.clear();
+      // Also clear localStorage
       localStorage.clear();
     } catch (e) {
       console.error("Failed to clear storage", e);
-      throw e;
+      // Fall back to localStorage only
+      try {
+        localStorage.clear();
+      } catch {
+        throw e;
+      }
     }
   },
 };

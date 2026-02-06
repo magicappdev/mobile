@@ -47,14 +47,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const saveTokens = async (accessToken: string, refreshToken: string) => {
+    console.log("Saving tokens...");
     await storage.setItem("access_token", accessToken);
     await storage.setItem("refresh_token", refreshToken);
     api.setToken(accessToken);
     try {
+      console.log("Fetching user data...");
       const userData = await api.getCurrentUser();
+      console.log("User data received, setting user:", userData?.email);
       setUser(userData);
-    } catch {
-      console.error("Failed to fetch user after login");
+    } catch (e) {
+      console.error("Failed to fetch user after login:", e);
     }
   };
 
@@ -151,22 +154,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // Handle Capacitor deep links (mobile) - magicappdev:// scheme
     const appUrlOpenListener = App.addListener("appUrlOpen", (data: { url: string }) => {
+      console.log("=== OAuth Callback Received ===");
       console.log("App opened with URL:", data.url);
       // Parse URL: magicappdev://auth/callback?accessToken=xxx&refreshToken=xxx
       try {
         const url = new URL(data.url);
+        console.log("Parsed URL - protocol:", url.protocol, "pathname:", url.pathname);
         if (url.protocol === "magicappdev:" && url.pathname === "/auth/callback") {
           const accessToken = url.searchParams.get("accessToken");
           const refreshToken = url.searchParams.get("refreshToken");
+          console.log("Access token present:", !!accessToken);
+          console.log("Refresh token present:", !!refreshToken);
           if (accessToken && refreshToken) {
+            console.log("Calling saveTokens...");
             saveTokens(accessToken, refreshToken);
+          } else {
+            console.error("Missing tokens in callback");
           }
+        } else {
+          console.log("URL does not match expected pattern");
         }
         // Close the browser if open
         Browser.close();
       } catch (e) {
         console.error("Failed to parse deep link URL:", e);
       }
+      console.log("=== OAuth Callback Processing Complete ===");
     });
 
     // Check for OAuth callback in URL on load (web)
