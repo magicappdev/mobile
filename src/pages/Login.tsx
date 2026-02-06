@@ -25,25 +25,27 @@ import {
 } from "@ionic/react";
 import { useAuth } from "../contexts/AuthContext";
 import { useHistory } from "react-router-dom";
-import { logoGithub } from "ionicons/icons";
+import { logoGithub, logoDiscord } from "ionicons/icons";
 import React, { useState } from "react";
 
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const { login, loginWithGitHub, loginWithDiscord } = useAuth();
   const history = useHistory();
 
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    setError(null);
     try {
       await login(email, password);
       history.push("/tabs/home");
-    } catch (error) {
-      console.error("Login failed:", error);
-      // TODO: Show error toast
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Login failed. Please check your credentials.";
+      setError(message);
     } finally {
       setIsLoading(false);
     }
@@ -119,6 +121,11 @@ export default function Login() {
                   />
                 </IonItem>
               </IonList>
+              {error && (
+                <div style={{ color: "var(--ion-color-danger)", marginTop: "12px", textAlign: "center", fontSize: "14px" }}>
+                  {error}
+                </div>
+              )}
               <div style={{ marginTop: "16px" }}>
                 <IonButton expand="block" type="submit" disabled={isLoading}>
                   {isLoading ? "Signing In..." : "Sign In"}
@@ -142,6 +149,7 @@ export default function Login() {
               GitHub
             </IonButton>
             <IonButton onClick={handleDiscordLogin} fill="outline">
+              <IonIcon slot="start" icon={logoDiscord} />
               Discord
             </IonButton>
           </IonButtons>

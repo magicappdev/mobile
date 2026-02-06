@@ -4,15 +4,14 @@
  * Manages user authentication state including:
  * - OAuth login (GitHub, Discord)
  * - Email/password login
- * - Token management with Capacitor Storage
- * - Deep linking for OAuth callbacks
+ * - Token management with Capacitor Preferences
  */
 
 /* eslint-disable react-refresh/only-export-components */
 import React, { createContext, useContext, useEffect, useState } from "react";
-import { storage } from "../lib/storage";
 import type { User } from "../types";
 import { api, type ApiResponse } from "../lib/api";
+import { storage } from "../lib/storage";
 import { App } from "@capacitor/app";
 import { Browser } from "@capacitor/browser";
 
@@ -126,56 +125,45 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
 
     loadAuth();
-    // Set up deep link handler for OAuth callbacks
-    const handleDeepLink = (event: MessageEvent) => {
-      // Verify origin to prevent XSS attacks - only accept messages from our API
-      const allowedOrigins = [
-        "https://magicappdev-api.magicappdev.workers.dev",
-        "https://magicappdev-llmchat.magicappdev.workers.dev",
-        window.location.origin, // Allow same origin
-      ];
-      if (!event.origin || !allowedOrigins.includes(event.origin)) {
-        console.warn(
-          "Rejected message from unauthorized origin:",
-          event.origin,
-        );
-        return;
-      }
-      if (event.data?.type === "oauth_callback") {
-        const { accessToken, refreshToken } = event.data;
-        if (accessToken && refreshToken) {
-          saveTokens(accessToken, refreshToken);
-        }
-      }
-    };
 
-    // Listen for messages from OAuth redirect page (web)
-    window.addEventListener("message", handleDeepLink);
-
-    // Handle Capacitor deep links (mobile) - magicappdev:// scheme
-    const appUrlOpenListener = App.addListener("appUrlOpen", (data: { url: string }) => {
+    // Handle deep links for OAuth callbacks
+    const appUrlOpenListener = App.addListener("appUrlOpen", async (data: { url: string }) => {
       console.log("=== OAuth Callback Received ===");
       console.log("App opened with URL:", data.url);
-      // Parse URL: magicappdev://auth/callback?accessToken=xxx&refreshToken=xxx
+
       try {
         const url = new URL(data.url);
         console.log("Parsed URL - protocol:", url.protocol, "pathname:", url.pathname);
+
         if (url.protocol === "magicappdev:" && url.pathname === "/auth/callback") {
           const accessToken = url.searchParams.get("accessToken");
           const refreshToken = url.searchParams.get("refreshToken");
+          const error = url.searchParams.get("error");
+
           console.log("Access token present:", !!accessToken);
           console.log("Refresh token present:", !!refreshToken);
+          console.log("Error present:", !!error);
+
+          if (error) {
+            console.error("OAuth error:", error);
+            alert(`Login failed: ${error}`);
+            return;
+          }
+
           if (accessToken && refreshToken) {
             console.log("Calling saveTokens...");
-            saveTokens(accessToken, refreshToken);
+            await saveTokens(accessToken, refreshToken);
+            // Close the browser if open
+            Browser.close();
+            // Navigate to home screen
+            console.log("Navigating to home screen...");
+            window.location.href = "/tabs/home";
           } else {
             console.error("Missing tokens in callback");
           }
         } else {
           console.log("URL does not match expected pattern");
         }
-        // Close the browser if open
-        Browser.close();
       } catch (e) {
         console.error("Failed to parse deep link URL:", e);
       }
@@ -187,44 +175,65 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const accessToken = urlParams.get("accessToken");
     const refreshToken = urlParams.get("refreshToken");
     if (accessToken && refreshToken) {
-      saveTokens(accessToken, refreshToken);
-      // Clear URL params
-      window.history.replaceState({}, "", window.location.pathname);
+      (async () => {
+        await saveTokens(accessToken, refreshToken);
+        // Clear URL params
+        window.history.replaceState({}, "", window.location.pathname);
+        // Navigate to home screen after successful OAuth login
+        window.location.href = "/tabs/home";
+      })();
     }
 
     return () => {
-      window.removeEventListener("message", handleDeepLink);
       appUrlOpenListener.then(listener => listener.remove());
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // GitHub OAuth
   const loginWithGitHub = async () => {
     try {
-      // Use custom URL scheme for mobile OAuth callback
+      // Generate a state parameter to pass through OAuth
+      const state = JSON.stringify({
+        platform: "mobile",
+        timestamp: Date.now(),
+      });
+
       const authUrl =
-        api.getGitHubLoginUrl("mobile") +
-        "&redirect_uri=" +
-        encodeURIComponent("magicappdev://auth/callback");
-      // Open OAuth in browser for mobile
+        `https://magicappdev-api.magicappdev.workers.dev/auth/login/github?platform=mobile&state=${encodeURIComponent(state)}`;
+
+      console.log("Opening GitHub OAuth URL:", authUrl);
+
+      // Open OAuth in browser
       await Browser.open({ url: authUrl });
+
+      console.log("Browser opened, waiting for OAuth callback...");
     } catch (error) {
       console.error("Failed to open browser for GitHub login:", error);
       alert("Unable to open GitHub login. Please try again.");
     }
   };
 
+  // Discord OAuth
   const loginWithDiscord = async () => {
     try {
-      // Use custom URL scheme for mobile OAuth callback
+      // Generate a state parameter to pass through OAuth
+      const state = JSON.stringify({
+        platform: "mobile",
+        timestamp: Date.now(),
+      });
+
       const authUrl =
-        api.getDiscordLoginUrl("mobile") +
-        "&redirect_uri=" +
-        encodeURIComponent("magicappdev://auth/callback");
-      // Open OAuth in browser for mobile
+        `https://magicappdev-api.magicappdev.workers.dev/auth/login/discord?platform=mobile&state=${encodeURIComponent(state)}`;
+
+      console.log("Opening Discord OAuth URL:", authUrl);
+
+      // Open OAuth in browser
       await Browser.open({ url: authUrl });
+
+      console.log("Browser opened, waiting for OAuth callback...");
     } catch (error) {
-      console.error("Failed to open browser for Discord login:", error);
+      console.error("Failed to open Discord login:", error);
       alert("Unable to open Discord login. Please try again.");
     }
   };

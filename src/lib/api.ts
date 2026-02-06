@@ -88,7 +88,7 @@ export class ApiClient {
     });
   }
 
-  async register(data: unknown) {
+  register(data: unknown) {
     return this.request("/auth/register", {
       method: "POST",
       body: JSON.stringify(data),
@@ -178,6 +178,12 @@ export class ApiClient {
 
   async getLinkAccountUrl(provider: string) {
     return `${this.baseUrl}/auth/link/${provider}${this.accessToken ? `?token=${this.accessToken}` : ""}`;
+  }
+
+  // Check if OAuth session is complete (for mobile polling)
+  async checkOAuthSession(sessionId: string): Promise<{ success: boolean; pending?: boolean; data?: { accessToken: string; refreshToken: string } }> {
+    const response = await fetch(`${this.baseUrl}/auth/check-session?sessionId=${sessionId}`);
+    return response.json();
   }
 
   /**
