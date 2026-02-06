@@ -13,6 +13,8 @@ import { IonReactRouter } from "@ionic/react-router";
 import { Redirect, Route } from "react-router-dom";
 import React from "react";
 
+import { appHistory } from "./contexts/NavigationContext";
+
 /* Core CSS required for Ionic components to work properly */
 import "@ionic/react/css/core.css";
 
@@ -45,6 +47,7 @@ import "./theme/variables.css";
 
 /* Context Providers */
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
+import { NavigationProvider } from "./contexts/NavigationContext";
 import { ThemeProvider } from "./contexts/ThemeContext";
 
 /* Pages */
@@ -155,11 +158,13 @@ const AppRoutes: React.FC = () => {
 const App: React.FC = () => (
   <IonApp>
     <ThemeProvider>
-      <AuthProvider>
-        <IonReactRouter>
-          <AppRoutes />
-        </IonReactRouter>
-      </AuthProvider>
+      <NavigationProvider>
+        <AuthProvider>
+          <IonReactRouter history={appHistory}>
+            <AppRoutes />
+          </IonReactRouter>
+        </AuthProvider>
+      </NavigationProvider>
     </ThemeProvider>
   </IonApp>
 );

@@ -23,18 +23,24 @@ import {
   IonTitle,
   IonToolbar,
 } from "@ionic/react";
-import { useAuth } from "../contexts/AuthContext";
-import { useHistory } from "react-router-dom";
 import { logoGithub, logoDiscord } from "ionicons/icons";
-import React, { useState } from "react";
+import { useAuth } from "../contexts/AuthContext";
+import React, { useEffect, useState } from "react";
 
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { login, loginWithGitHub, loginWithDiscord } = useAuth();
-  const history = useHistory();
+  const { login, loginWithGitHub, loginWithDiscord, user } = useAuth();
+
+  // Redirect is handled by AuthContext when user state changes
+  useEffect(() => {
+    if (user) {
+      // User is logged in, AuthContext will handle navigation
+      console.log("Login: User authenticated, navigation will be handled by AuthContext");
+    }
+  }, [user]);
 
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,9 +48,12 @@ export default function Login() {
     setError(null);
     try {
       await login(email, password);
-      history.push("/tabs/home");
+      // Navigation is handled by AuthContext when user state updates
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Login failed. Please check your credentials.";
+      const message =
+        err instanceof Error
+          ? err.message
+          : "Login failed. Please check your credentials.";
       setError(message);
     } finally {
       setIsLoading(false);
@@ -122,7 +131,14 @@ export default function Login() {
                 </IonItem>
               </IonList>
               {error && (
-                <div style={{ color: "var(--ion-color-danger)", marginTop: "12px", textAlign: "center", fontSize: "14px" }}>
+                <div
+                  style={{
+                    color: "var(--ion-color-danger)",
+                    marginTop: "12px",
+                    textAlign: "center",
+                    fontSize: "14px",
+                  }}
+                >
                   {error}
                 </div>
               )}

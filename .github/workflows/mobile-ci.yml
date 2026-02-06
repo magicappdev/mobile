@@ -1,0 +1,98 @@
+name: Mobile CI/CD
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  NODE_VERSION: 22
+  JAVA_VERSION: "21"
+
+jobs:
+  lint-and-typecheck:
+    name: Lint & Typecheck
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Setup Node.js
+        uses: actions/setup-node@1d0ff469b7ec7b3cb9d8673fde0c81c44821de2a # v4.2.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint mobile app
+        run: npm run lint
+
+      - name: Typecheck mobile app
+        run: npm run typecheck
+
+
+
+  build-android:
+    name: Build Android APK
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Setup Node.js
+        uses: actions/setup-node@1d0ff469b7ec7b3cb9d8673fde0c81c44821de2a # v4.2.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+
+      - name: Setup Java JDK
+        uses: actions/setup-java@6a0805fcefea3d4657a47ac4c165951e33482018 # v4.2.2
+        with:
+          distribution: "temurin"
+          java-version: ${{ env.JAVA_VERSION }}
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+
+      - name: Sync Capacitor
+        run: npm run ionic:sync
+
+      - name: Cache Gradle dependencies
+        uses: actions/cache@d4323d4df104b026a6aa633fdb11d772146be0bf # v4.2.2
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+            android/.gradle
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
+      - name: Build Android APK (Release)
+        working-directory: android
+        run: ./gradlew assembleRelease --no-daemon --stacktrace
+        env:
+          GRADLE_OPTS: -Dorg.gradle.jvmargs="-Xmx4g -XX:MaxMetaspaceSize=1024m -XX:+HeapDumpOnOutOfMemoryError"
+          ORG_GRADLE_PROJECT_jvmArgs: -Xmx4g -XX:MaxMetaspaceSize=1024m
+          NODE_OPTIONS: "--max-old-space-size=4096"
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v6.0.0 # v4.6.0
+        with:
+          name: android-release-apk
+          path: android/app/build/outputs/apk/release/app-release.apk
+          retention-days: 30
+          if-no-files-found: error

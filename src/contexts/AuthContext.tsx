@@ -8,12 +8,13 @@
  */
 
 /* eslint-disable react-refresh/only-export-components */
-import React, { createContext, useContext, useEffect, useState } from "react";
-import type { User } from "../types";
+import React, { createContext, useContext, useEffect, useRef, useState } from "react";
 import { api, type ApiResponse } from "../lib/api";
+import { Browser } from "@capacitor/browser";
 import { storage } from "../lib/storage";
 import { App } from "@capacitor/app";
-import { Browser } from "@capacitor/browser";
+import type { User } from "../types";
+import { useNavigation } from "./NavigationContext";
 
 interface AuthContextType {
   user: User | null;
@@ -29,6 +30,8 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const hasNavigatedRef = useRef(false);
+  const { navigate } = useNavigation();
 
   const handleLogout = async () => {
     const refreshToken = await storage.getItem("refresh_token");
@@ -43,9 +46,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await storage.removeItem("refresh_token");
     api.setToken(null);
     setUser(null);
+    hasNavigatedRef.current = false; // Reset navigation flag on logout
   };
 
-  const saveTokens = async (accessToken: string, refreshToken: string) => {
+  const saveTokens = async (
+    accessToken: string,
+    refreshToken: string,
+  ): Promise<User | null> => {
     console.log("Saving tokens...");
     await storage.setItem("access_token", accessToken);
     await storage.setItem("refresh_token", refreshToken);
@@ -55,8 +62,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const userData = await api.getCurrentUser();
       console.log("User data received, setting user:", userData?.email);
       setUser(userData);
+      // Wait for React to update the state before returning
+      await new Promise(resolve => setTimeout(resolve, 100));
+      return userData;
     } catch (e) {
       console.error("Failed to fetch user after login:", e);
+      return null;
     }
   };
 
@@ -68,7 +79,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         refreshToken: string;
       }>;
       if (response.success) {
-        await saveTokens(response.data.accessToken, response.data.refreshToken);
+        const userData = await saveTokens(
+          response.data.accessToken,
+          response.data.refreshToken,
+        );
+        if (!userData) {
+          throw new Error("Failed to fetch user data");
+        }
+        // Additional delay to ensure React has flushed state updates
+        await new Promise(resolve => setTimeout(resolve, 200));
       } else {
         throw new Error(response.error.message || "Login failed");
       }
@@ -79,6 +98,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setIsLoading(false);
     }
   };
+
+  // Handle navigation based on auth state
+  useEffect(() => {
+    // Only navigate if user is authenticated, not loading, and we haven't navigated yet
+    if (user && !isLoading && !hasNavigatedRef.current) {
+      const currentPath = window.location.pathname;
+      console.log("Auth navigation check - current path:", currentPath);
+
+      // Check if we're on an auth-related path or the callback path
+      const isAuthPath = ["/login", "/register", "/", "/auth/callback"].includes(currentPath) ||
+                         currentPath.startsWith("/auth/");
+
+      if (isAuthPath) {
+        console.log("User authenticated, navigating to root for redirect...");
+        hasNavigatedRef.current = true;
+        // Navigate to root - the App.tsx will redirect to /tabs/home based on user state
+        navigate("/");
+      } else {
+        // Already on a protected route, mark as navigated
+        console.log("Already on protected route:", currentPath);
+        hasNavigatedRef.current = true;
+      }
+    }
+    // Reset navigation flag when user logs out (user becomes null)
+    if (!user && !isLoading) {
+      hasNavigatedRef.current = false;
+    }
+  }, [user, isLoading, navigate]);
 
   useEffect(() => {
     // Load auth state on mount
@@ -127,48 +174,66 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     loadAuth();
 
     // Handle deep links for OAuth callbacks
-    const appUrlOpenListener = App.addListener("appUrlOpen", async (data: { url: string }) => {
-      console.log("=== OAuth Callback Received ===");
-      console.log("App opened with URL:", data.url);
+    const appUrlOpenListener = App.addListener(
+      "appUrlOpen",
+      async (data: { url: string }) => {
+        console.log("=== OAuth Callback Received ===");
+        console.log("App opened with URL:", data.url);
 
-      try {
-        const url = new URL(data.url);
-        console.log("Parsed URL - protocol:", url.protocol, "pathname:", url.pathname);
+        try {
+          const url = new URL(data.url);
+          console.log(
+            "Parsed URL - protocol:",
+            url.protocol,
+            "pathname:",
+            url.pathname,
+          );
 
-        if (url.protocol === "magicappdev:" && url.pathname === "/auth/callback") {
-          const accessToken = url.searchParams.get("accessToken");
-          const refreshToken = url.searchParams.get("refreshToken");
-          const error = url.searchParams.get("error");
+          if (
+            url.protocol === "magicappdev:" &&
+            url.pathname === "/auth/callback"
+          ) {
+            const accessToken = url.searchParams.get("accessToken");
+            const refreshToken = url.searchParams.get("refreshToken");
+            const error = url.searchParams.get("error");
 
-          console.log("Access token present:", !!accessToken);
-          console.log("Refresh token present:", !!refreshToken);
-          console.log("Error present:", !!error);
+            console.log("Access token present:", !!accessToken);
+            console.log("Refresh token present:", !!refreshToken);
+            console.log("Error present:", !!error);
 
-          if (error) {
-            console.error("OAuth error:", error);
-            alert(`Login failed: ${error}`);
-            return;
-          }
+            if (error) {
+              console.error("OAuth error:", error);
+              alert(`Login failed: ${error}`);
+              return;
+            }
 
-          if (accessToken && refreshToken) {
-            console.log("Calling saveTokens...");
-            await saveTokens(accessToken, refreshToken);
-            // Close the browser if open
-            Browser.close();
-            // Navigate to home screen
-            console.log("Navigating to home screen...");
-            window.location.href = "/tabs/home";
+            if (accessToken && refreshToken) {
+              console.log("Setting loading state to true...");
+              setIsLoading(true);
+              console.log("Calling saveTokens...");
+              const userData = await saveTokens(accessToken, refreshToken);
+              if (userData) {
+                // Close the browser if open
+                Browser.close();
+                // Set loading to false - navigation will be handled by useEffect watching user state
+                setIsLoading(false);
+              } else {
+                console.error("Failed to fetch user after OAuth");
+                setIsLoading(false);
+              }
+            } else {
+              console.error("Missing tokens in callback");
+            }
           } else {
-            console.error("Missing tokens in callback");
+            console.log("URL does not match expected pattern");
           }
-        } else {
-          console.log("URL does not match expected pattern");
+        } catch (e) {
+          console.error("Failed to parse deep link URL:", e);
+          setIsLoading(false);
         }
-      } catch (e) {
-        console.error("Failed to parse deep link URL:", e);
-      }
-      console.log("=== OAuth Callback Processing Complete ===");
-    });
+        console.log("=== OAuth Callback Processing Complete ===");
+      },
+    );
 
     // Check for OAuth callback in URL on load (web)
     const urlParams = new URLSearchParams(window.location.search);
@@ -176,11 +241,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const refreshToken = urlParams.get("refreshToken");
     if (accessToken && refreshToken) {
       (async () => {
-        await saveTokens(accessToken, refreshToken);
-        // Clear URL params
-        window.history.replaceState({}, "", window.location.pathname);
-        // Navigate to home screen after successful OAuth login
-        window.location.href = "/tabs/home";
+        setIsLoading(true);
+        const userData = await saveTokens(accessToken, refreshToken);
+        if (userData) {
+          // Set loading to false - navigation will be handled by useEffect watching user state
+          setIsLoading(false);
+        } else {
+          setIsLoading(false);
+        }
       })();
     }
 
@@ -199,8 +267,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         timestamp: Date.now(),
       });
 
-      const authUrl =
-        `https://magicappdev-api.magicappdev.workers.dev/auth/login/github?platform=mobile&state=${encodeURIComponent(state)}`;
+      const authUrl = `https://magicappdev-api.magicappdev.workers.dev/auth/login/github?platform=mobile&state=${encodeURIComponent(state)}`;
 
       console.log("Opening GitHub OAuth URL:", authUrl);
 
@@ -223,8 +290,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         timestamp: Date.now(),
       });
 
-      const authUrl =
-        `https://magicappdev-api.magicappdev.workers.dev/auth/login/discord?platform=mobile&state=${encodeURIComponent(state)}`;
+      const authUrl = `https://magicappdev-api.magicappdev.workers.dev/auth/login/discord?platform=mobile&state=${encodeURIComponent(state)}`;
 
       console.log("Opening Discord OAuth URL:", authUrl);
 

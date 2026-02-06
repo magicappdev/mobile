@@ -181,8 +181,16 @@ export class ApiClient {
   }
 
   // Check if OAuth session is complete (for mobile polling)
-  async checkOAuthSession(sessionId: string): Promise<{ success: boolean; pending?: boolean; data?: { accessToken: string; refreshToken: string } }> {
-    const response = await fetch(`${this.baseUrl}/auth/check-session?sessionId=${sessionId}`);
+  async checkOAuthSession(
+    sessionId: string,
+  ): Promise<{
+    success: boolean;
+    pending?: boolean;
+    data?: { accessToken: string; refreshToken: string };
+  }> {
+    const response = await fetch(
+      `${this.baseUrl}/auth/check-session?sessionId=${sessionId}`,
+    );
     return response.json();
   }
 
