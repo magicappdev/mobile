@@ -12,8 +12,12 @@ const config: CapacitorConfig = {
     // For development, can use: url: 'http://192.168.x.x:8100'
     // For production, omit url to use local assets
   },
-  // Uncomment for local development from network:
-  // url: 'http://10.0.2.2:8100'
+  // Deep link configuration for magicappdev:// scheme
+  plugins: {
+    App: {
+      // Handle URL opening events
+    },
+  },
 };
 
 export default config;

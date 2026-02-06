@@ -13,6 +13,8 @@ import React, { createContext, useContext, useEffect, useState } from "react";
 import { storage } from "../lib/storage";
 import type { User } from "../types";
 import { api, type ApiResponse } from "../lib/api";
+import { App } from "@capacitor/app";
+import { Browser } from "@capacitor/browser";
 
 interface AuthContextType {
   user: User | null;
@@ -144,10 +146,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     };
 
-    // Listen for messages from OAuth redirect page
+    // Listen for messages from OAuth redirect page (web)
     window.addEventListener("message", handleDeepLink);
 
-    // Check for OAuth callback in URL on load
+    // Handle Capacitor deep links (mobile) - magicappdev:// scheme
+    const appUrlOpenListener = App.addListener("appUrlOpen", (data: { url: string }) => {
+      console.log("App opened with URL:", data.url);
+      // Parse URL: magicappdev://auth/callback?accessToken=xxx&refreshToken=xxx
+      try {
+        const url = new URL(data.url);
+        if (url.protocol === "magicappdev:" && url.pathname === "/auth/callback") {
+          const accessToken = url.searchParams.get("accessToken");
+          const refreshToken = url.searchParams.get("refreshToken");
+          if (accessToken && refreshToken) {
+            saveTokens(accessToken, refreshToken);
+          }
+        }
+        // Close the browser if open
+        Browser.close();
+      } catch (e) {
+        console.error("Failed to parse deep link URL:", e);
+      }
+    });
+
+    // Check for OAuth callback in URL on load (web)
     const urlParams = new URLSearchParams(window.location.search);
     const accessToken = urlParams.get("accessToken");
     const refreshToken = urlParams.get("refreshToken");
@@ -159,6 +181,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     return () => {
       window.removeEventListener("message", handleDeepLink);
+      appUrlOpenListener.then(listener => listener.remove());
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -169,8 +192,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       api.getGitHubLoginUrl("mobile") +
       "&redirect_uri=" +
       encodeURIComponent("magicappdev://auth/callback");
-    // For mobile, open in system browser
-    window.open(authUrl, "_system");
+    // Open OAuth in browser for mobile
+    await Browser.open({ url: authUrl });
   };
 
   const loginWithDiscord = async () => {
@@ -179,8 +202,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       api.getDiscordLoginUrl("mobile") +
       "&redirect_uri=" +
       encodeURIComponent("magicappdev://auth/callback");
-    // For mobile, open in system browser
-    window.open(authUrl, "_system");
+    // Open OAuth in browser for mobile
+    await Browser.open({ url: authUrl });
   };
 
   return (
