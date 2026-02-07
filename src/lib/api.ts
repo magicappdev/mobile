@@ -144,6 +144,16 @@ export class ApiClient {
     return response.data.data;
   }
 
+  async getProject(id: string): Promise<Project> {
+    const response = (await this.request(
+      `/projects/${id}`,
+    )) as ApiResponse<Project>;
+    if (!response.success) {
+      throw new Error(response.error.message);
+    }
+    return response.data;
+  }
+
   async createProject(data: Record<string, unknown>): Promise<Project> {
     const response = (await this.request("/projects", {
       method: "POST",

@@ -30,15 +30,16 @@ import {
   rocketOutline,
   trashOutline,
   settingsOutline,
-  eyeOutline,
+  checkmarkCircleOutline,
 } from "ionicons/icons";
 import React, { useState, useEffect, useCallback } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useHistory } from "react-router-dom";
 import type { Project } from "../types";
 import { api } from "../lib/api";
 
 export default function ProjectDetail() {
   const { id } = useParams<{ id: string }>();
+  const history = useHistory();
   const [project, setProject] = useState<Project | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -50,16 +51,13 @@ export default function ProjectDetail() {
     try {
       setIsLoading(true);
       setError(null);
-      const projects = await api.getProjects();
-      const found = projects.find(p => p.id === id);
-      if (found) {
-        setProject(found);
-      } else {
-        setError("Project not found");
-      }
+      const found = await api.getProject(id);
+      setProject(found);
     } catch (error) {
       console.error("Failed to load project:", error);
-      setError("Failed to load project");
+      setError(
+        error instanceof Error ? error.message : "Failed to load project",
+      );
     } finally {
       setIsLoading(false);
     }
@@ -80,7 +78,7 @@ export default function ProjectDetail() {
     setIsDeleting(true);
     try {
       await api.deleteProject(project.id);
-      window.location.href = "/tabs/projects";
+      history.push("/tabs/projects");
     } catch (error) {
       console.error("Failed to delete project:", error);
       setIsDeleting(false);
@@ -182,11 +180,6 @@ export default function ProjectDetail() {
             <IonBackButton defaultHref="/tabs/projects" />
           </IonButtons>
           <IonTitle>{project.name}</IonTitle>
-          <IonButtons slot="end">
-            <IonButton href={`/tabs/projects/${project.id}/settings`}>
-              <IonIcon slot="icon-only" icon={settingsOutline} />
-            </IonButton>
-          </IonButtons>
         </IonToolbar>
       </IonHeader>
       <IonContent>
@@ -252,20 +245,25 @@ export default function ProjectDetail() {
         {/* Actions */}
         <IonCard>
           <IonList>
-            <IonItem button href={`/tabs/projects/${project.id}/preview`}>
-              <IonIcon icon={eyeOutline} slot="start" color="primary" />
-              <IonLabel>
-                <h3>Open Preview</h3>
-                <p>View live preview of your project</p>
-              </IonLabel>
-            </IonItem>
-            <IonItem button href={`/tabs/projects/${project.id}/settings`}>
-              <IonIcon icon={settingsOutline} slot="start" color="medium" />
-              <IonLabel>
-                <h3>Settings</h3>
-                <p>Configure project settings</p>
-              </IonLabel>
-            </IonItem>
+            {project.deploymentUrl && (
+              <IonItem
+                button
+                href={project.deploymentUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <IonIcon icon={rocketOutline} slot="start" color="success" />
+                <IonLabel>
+                  <h3>Live Deployment</h3>
+                  <p>Open deployed application</p>
+                </IonLabel>
+                <IonIcon
+                  icon={checkmarkCircleOutline}
+                  slot="end"
+                  color="success"
+                />
+              </IonItem>
+            )}
             {project.githubUrl && (
               <IonItem
                 button
@@ -280,20 +278,13 @@ export default function ProjectDetail() {
                 </IonLabel>
               </IonItem>
             )}
-            {project.deploymentUrl && (
-              <IonItem
-                button
-                href={project.deploymentUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <IonIcon icon={rocketOutline} slot="start" color="success" />
-                <IonLabel>
-                  <h3>Live Deployment</h3>
-                  <p>Open deployed application</p>
-                </IonLabel>
-              </IonItem>
-            )}
+            <IonItem button routerLink="/tabs/settings">
+              <IonIcon icon={settingsOutline} slot="start" color="medium" />
+              <IonLabel>
+                <h3>App Settings</h3>
+                <p>Configure application settings</p>
+              </IonLabel>
+            </IonItem>
           </IonList>
         </IonCard>
 
