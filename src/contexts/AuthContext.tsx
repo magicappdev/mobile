@@ -238,7 +238,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [user, isLoading, navigate]);
 
+  // Separate effect for deep link listener to ensure it's always active
   useEffect(() => {
+    console.log("Setting up App.appUrlOpen listener...");
+    const appUrlOpenListener = App.addListener(
+      "appUrlOpen",
+      async (data: { url: string }) => {
+        console.log("=== OAuth Callback Received (Listener) ===");
+        console.log("Deep link URL:", data.url);
+
+        // EXTREMELY LOUD DEBUGGING
+        alert(`Deep link received: ${data.url.substring(0, 50)}...`);
+
+        // Use a small delay to ensure the OS has finished the transition
+        setTimeout(async () => {
+          await handleDeepLink(data.url);
+        }, 100);
+      },
+    );
+
     const loadAuth = async () => {
       console.log("Loading auth state from storage...");
       const accessToken = await storage.getItem("access_token");
@@ -280,10 +298,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const initialize = async () => {
       setIsLoading(true);
       try {
+        // Give the bridge a moment to be completely ready
+        await new Promise(resolve => setTimeout(resolve, 1000));
+
         // 1. Check for cold start deep link
         const launchUrl = await App.getLaunchUrl();
         if (launchUrl?.url) {
           console.log("App launched with URL (cold start):", launchUrl.url);
+          alert(`Cold start URL: ${launchUrl.url.substring(0, 50)}...`);
           const handled = await handleDeepLink(launchUrl.url);
           if (handled) return; // Stop if deep link was handled successfully
         }
@@ -298,29 +320,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
 
     initialize();
-  }, [handleDeepLink]);
-
-  // Separate effect for deep link listener to ensure it's always active
-  useEffect(() => {
-    console.log("Setting up App.appUrlOpen listener...");
-    const appUrlOpenListener = App.addListener(
-      "appUrlOpen",
-      async (data: { url: string }) => {
-        console.log("=== OAuth Callback Received (Listener) ===");
-        console.log("Deep link URL:", data.url);
-
-        // Use a small delay to ensure the OS has finished the transition
-        setTimeout(async () => {
-          await handleDeepLink(data.url);
-        }, 100);
-      },
-    );
 
     return () => {
       console.log("Removing App.appUrlOpen listener...");
       appUrlOpenListener.then(listener => listener.remove());
     };
-  }, [handleDeepLink]); // Depend on stable handleDeepLink
+  }, [handleDeepLink]);
 
   // Check for OAuth callback in URL on load (web)
   useEffect(() => {
