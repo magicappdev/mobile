@@ -8,13 +8,8 @@ import { defineConfig } from "vite";
 export default defineConfig({
   plugins: [react(), legacy()],
   build: {
-    minify: "terser",
-    terserOptions: {
-      format: {
-        comments: false, // Remove all comments to avoid 'Unterminated comment' issues
-      },
-    },
     target: "es2020",
+    minify: false,
   },
   test: {
     globals: true,

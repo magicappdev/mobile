@@ -82,7 +82,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const login = async (email: string, password: string) => {
-    setIsLoading(true);
     try {
       const response = (await api.login({ email, password })) as ApiResponse<{
         accessToken: string;
@@ -102,8 +101,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch (e: unknown) {
       const message = e instanceof Error ? e.message : "An error occurred";
       throw new Error(message);
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -163,9 +160,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Helper to process deep link URLs
     const handleDeepLink = async (urlString: string): Promise<boolean> => {
       console.log("Processing deep link URL:", urlString);
-      alert(`DEBUG: URL Received: ${urlString.split("?")[0]}`);
-      processingDeepLinkRef.current = true;
-      setIsLoading(true);
 
       try {
         const url = new URL(urlString);
@@ -177,6 +171,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         if (isAuthCallback) {
           console.log("OAuth callback detected, processing tokens...");
+          processingDeepLinkRef.current = true;
+          setIsLoading(true);
 
           // Try to get tokens from both search params and hash fragment
           const fragmentParams = new URLSearchParams(url.hash.substring(1));
@@ -195,14 +191,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           const error =
             url.searchParams.get("error") || fragmentParams.get("error");
 
-          alert(
-            `DEBUG: Tokens extracted: Access=${!!accessToken}, Refresh=${!!refreshToken}, Error=${error || "none"}`,
-          );
-
           if (error) {
             console.error("OAuth error from URL:", error);
             alert(`Login failed: ${error}`);
-            return false;
+            setIsLoading(false);
+            processingDeepLinkRef.current = false;
+            return true; // We handled it, even if it's an error
           }
 
           if (accessToken && refreshToken) {
@@ -212,24 +206,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               console.log(
                 "OAuth successful, closing browser and navigating...",
               );
-              alert(`DEBUG: Auth Success! User: ${userData.email}`);
               Browser.close();
-              // Force navigation to home tab
+
+              // CRITICAL: Set loading to false BEFORE navigating
+              // so the router is actually rendered and can handle the push
+              setIsLoading(false);
+              processingDeepLinkRef.current = false;
+
+              console.log("Navigating to /tabs/home...");
               navigate("/tabs/home");
               return true;
             } else {
               console.error("Failed to fetch user data with received tokens");
-              return false;
+              setIsLoading(false);
+              processingDeepLinkRef.current = false;
+              return true;
             }
           }
+
+          setIsLoading(false);
+          processingDeepLinkRef.current = false;
+          return true;
         }
         return false;
       } catch (e) {
         console.error("Failed to parse deep link URL:", e);
         return false;
-      } finally {
-        processingDeepLinkRef.current = false;
-        // Don't set isLoading(false) here, initialize will handle it
       }
     };
 
@@ -265,6 +267,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             await handleLogout();
           }
         }
+      } else {
+        console.log("No access token found in storage.");
+        setUser(null);
       }
     };
 

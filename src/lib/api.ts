@@ -52,25 +52,34 @@ export class ApiClient {
       headers["Authorization"] = `Bearer ${this.accessToken}`;
     }
 
-    const response = await fetch(url, {
-      ...options,
-      headers,
-    });
+    console.log(`[API] Requesting: ${options.method || "GET"} ${url}`);
 
-    if (!response.ok) {
-      const errorData = (await response
-        .json()
-        .catch(() => ({}))) as ApiErrorData;
-      const message =
-        (typeof errorData.error === "object"
-          ? errorData.error?.message
-          : undefined) ||
-        (typeof errorData.error === "string" ? errorData.error : undefined) ||
-        `API Request failed: ${response.statusText}`;
-      throw new Error(message);
+    try {
+      const response = await fetch(url, {
+        ...options,
+        headers,
+      });
+
+      console.log(`[API] Response: ${response.status} ${response.statusText}`);
+
+      if (!response.ok) {
+        const errorData = (await response
+          .json()
+          .catch(() => ({}))) as ApiErrorData;
+        const message =
+          (typeof errorData.error === "object"
+            ? errorData.error?.message
+            : undefined) ||
+          (typeof errorData.error === "string" ? errorData.error : undefined) ||
+          `API Request failed: ${response.statusText}`;
+        throw new Error(message);
+      }
+
+      return response.json() as Promise<unknown>;
+    } catch (e) {
+      console.error(`[API] Request Error for ${url}:`, e);
+      throw e;
     }
-
-    return response.json() as Promise<unknown>;
   }
 
   getGitHubLoginUrl(platform = "web") {

@@ -1,9 +1,7 @@
 import {
   IonApp,
-  IonContent,
   IonIcon,
   IonLabel,
-  IonPage,
   IonRouterOutlet,
   IonSpinner,
   IonTabBar,
@@ -116,49 +114,26 @@ const AppRoutes: React.FC = () => {
   const { user, isLoading } = useAuth();
 
   console.log(
-    `[ROUTER] Render: user=${!!user}, isLoading=${isLoading}, path=${window.location.pathname}`,
+    `[ROUTER] Render - user: ${!!user}, isLoading: ${isLoading}, path: ${window.location.pathname}`,
   );
 
-  if (isLoading) {
-    return (
-      <IonPage>
-        <IonContent>
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              height: "100%",
-            }}
-          >
-            <IonSpinner name="crescent" />
-          </div>
-        </IonContent>
-      </IonPage>
-    );
-  }
-
   return (
-    <IonRouterOutlet>
-      {/* Auth Routes - only accessible when logged out */}
-      <Route exact path="/login">
-        {!user ? <Login /> : <Redirect to="/tabs/home" />}
-      </Route>
-      <Route exact path="/register">
-        {user ? <Redirect to="/tabs/home" /> : <Register />}
-      </Route>
+    <>
+      <IonRouterOutlet>
+        {/* Auth Routes */}
+        <Route exact path="/login">
+          {!user ? <Login /> : <Redirect to="/tabs/home" />}
+        </Route>
+        <Route exact path="/register">
+          {!user ? <Register /> : <Redirect to="/tabs/home" />}
+        </Route>
 
-      {/* Main Tab Routes - only accessible when logged in */}
-      <Route
-        path="/tabs"
-        render={() => (user ? <Tabs /> : <Redirect to="/login" />)}
-      />
+        {/* Main Tab Routes */}
+        <Route path="/tabs">{user ? <Tabs /> : <Redirect to="/login" />}</Route>
 
-      {/* Admin Routes - only accessible when logged in */}
-      <Route
-        path="/admin"
-        render={() =>
-          user ? (
+        {/* Admin Routes */}
+        <Route path="/admin">
+          {user ? (
             <IonRouterOutlet>
               <Route exact path="/admin/dashboard" component={AdminDashboard} />
               <Route exact path="/admin/users" component={AdminUsers} />
@@ -173,22 +148,40 @@ const AppRoutes: React.FC = () => {
             </IonRouterOutlet>
           ) : (
             <Redirect to="/login" />
-          )
-        }
-      />
+          )}
+        </Route>
 
-      {/* Root Redirect */}
-      <Route
-        exact
-        path="/"
-        render={() =>
-          user ? <Redirect to="/tabs/home" /> : <Redirect to="/login" />
-        }
-      />
+        {/* Root Redirect */}
+        <Route exact path="/">
+          {user ? <Redirect to="/tabs/home" /> : <Redirect to="/login" />}
+        </Route>
 
-      {/* Fallback */}
-      <Route render={() => <Redirect to={user ? "/tabs/home" : "/login"} />} />
-    </IonRouterOutlet>
+        {/* Fallback */}
+        <Route>
+          <Redirect to={user ? "/tabs/home" : "/login"} />
+        </Route>
+      </IonRouterOutlet>
+
+      {/* Global Loading Overlay */}
+      {isLoading && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: "var(--ion-background-color, #fff)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 9999,
+          }}
+        >
+          <IonSpinner name="crescent" />
+        </div>
+      )}
+    </>
   );
 };
 

@@ -83,7 +83,9 @@ jobs:
 
       - name: Build Android APK (Release)
         working-directory: android
-        run: ./gradlew assembleRelease --no-daemon --stacktrace
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleRelease --no-daemon --stacktrace
         env:
           GRADLE_OPTS: -Dorg.gradle.jvmargs="-Xmx4g -XX:MaxMetaspaceSize=1024m -XX:+HeapDumpOnOutOfMemoryError"
           ORG_GRADLE_PROJECT_jvmArgs: -Xmx4g -XX:MaxMetaspaceSize=1024m
