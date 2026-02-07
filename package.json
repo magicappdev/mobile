@@ -2,7 +2,7 @@
   "name": "@magicappdev/mobile-ionic",
   "version": "0.0.3",
   "private": true,
-  "description": "An Ionic project",
+  "description": "An mobile app built with Ionic to build apps with MagicAppDev",
   "type": "module",
   "scripts": {
     "android": "ionic capacitor run android -l --external",
