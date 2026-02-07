@@ -16,7 +16,7 @@ import { IonReactRouter } from "@ionic/react-router";
 import { Redirect, Route } from "react-router-dom";
 import React from "react";
 
-import { appHistory } from "./contexts/NavigationContext";
+import { appHistory } from "./lib/history";
 
 /* Core CSS required for Ionic components to work properly */
 import "@ionic/react/css/core.css";

@@ -6,10 +6,7 @@
  */
 
 import { createContext, useContext } from "react";
-import { createBrowserHistory } from "history";
-
-// Create a custom history instance that can be used throughout the app
-export const appHistory = createBrowserHistory();
+import { appHistory } from "../lib/history";
 
 interface NavigationContextType {
   navigate: (path: string) => void;
@@ -35,6 +32,7 @@ export function NavigationProvider({
   );
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useNavigation() {
   const context = useContext(NavigationContext);
   if (!context) {

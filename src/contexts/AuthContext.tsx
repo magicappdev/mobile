@@ -172,6 +172,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         !!refreshToken,
       );
 
+      if (accessToken || refreshToken) {
+        // alert(`Initial load - Access: ${!!accessToken}, Refresh: ${!!refreshToken}`);
+      }
+
       if (accessToken) {
         api.setToken(accessToken);
         try {
@@ -212,23 +216,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
 
     // Helper to process deep link URLs
+
     const handleDeepLink = async (urlString: string) => {
       console.log("Processing deep link URL:", urlString);
+
+      alert(`Deep link detected: ${urlString.split("?")[0]}...`);
+
       processingDeepLinkRef.current = true;
+
       setIsLoading(true);
 
       try {
         const url = new URL(urlString);
-        console.log(
-          "Parsed URL - protocol:",
-          url.protocol,
-          "host:",
-          url.host,
-          "pathname:",
-          url.pathname,
-        );
 
         // Support various formats: magicappdev://auth/callback, magicappdev://callback, etc.
+
         const isAuthCallback =
           url.protocol === "magicappdev:" &&
           (url.pathname.includes("callback") || url.host.includes("callback"));
@@ -237,7 +239,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           console.log("OAuth callback detected, processing tokens...");
 
           // Try to get tokens from both search params and hash fragment
+
           const fragmentParams = new URLSearchParams(url.hash.substring(1));
+
           const accessToken =
             url.searchParams.get("accessToken") ||
             url.searchParams.get("access_token") ||
@@ -255,9 +259,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
           console.log(
             "Tokens found - access:",
+
             !!accessToken,
+
             "refresh:",
+
             !!refreshToken,
+          );
+
+          alert(
+            `Callback results - Access: ${!!accessToken}, Refresh: ${!!refreshToken}, Error: ${error || "none"}`,
           );
 
           if (error) {

@@ -65,7 +65,7 @@ jobs:
         uses: android-actions/setup-android@v3
 
       - name: Sync Capacitor
-        run: npx ionic cap sync
+        run: npx @ionic/cli cap sync android --no-interactive
 
       - name: Cache Gradle dependencies
         uses: actions/cache@d4323d4df104b026a6aa633fdb11d772146be0bf # v4.2.2
