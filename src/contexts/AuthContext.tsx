@@ -160,77 +160,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [user, isLoading, navigate]);
 
   useEffect(() => {
-    // Load auth state on mount
-    const loadAuth = async () => {
-      console.log("Loading auth state...");
-      const accessToken = await storage.getItem("access_token");
-      const refreshToken = await storage.getItem("refresh_token");
-      console.log(
-        "access_token exists:",
-        !!accessToken,
-        "refresh_token exists:",
-        !!refreshToken,
-      );
-
-      if (accessToken || refreshToken) {
-        // alert(`Initial load - Access: ${!!accessToken}, Refresh: ${!!refreshToken}`);
-      }
-
-      if (accessToken) {
-        api.setToken(accessToken);
-        try {
-          console.log("Fetching current user...");
-          const userData = await api.getCurrentUser();
-          console.log("User data received:", userData?.email);
-          setUser(userData);
-        } catch {
-          console.log("Access token failed, trying refresh...");
-          if (refreshToken) {
-            try {
-              const newToken = await api.refresh(refreshToken);
-              await storage.setItem("access_token", newToken);
-              const userData = await api.getCurrentUser();
-              setUser(userData);
-            } catch {
-              console.log("Refresh failed, logging out...");
-              await handleLogout();
-            }
-          } else {
-            console.log("No refresh token, logging out...");
-            await handleLogout();
-          }
-        }
-      } else {
-        console.log("No stored tokens, user is logged out");
-      }
-
-      if (!processingDeepLinkRef.current) {
-        setIsLoading(false);
-      }
-      console.log(
-        "Initial load complete - user:",
-        !!user,
-        "isLoading:",
-        !processingDeepLinkRef.current,
-      );
-    };
-
     // Helper to process deep link URLs
-
-    const handleDeepLink = async (urlString: string) => {
+    const handleDeepLink = async (urlString: string): Promise<boolean> => {
       console.log("Processing deep link URL:", urlString);
-
-      alert(`Deep link detected: ${urlString.split("?")[0]}...`);
-
+      alert(`DEBUG: URL Received: ${urlString.split("?")[0]}`);
       processingDeepLinkRef.current = true;
-
       setIsLoading(true);
 
       try {
         const url = new URL(urlString);
 
         // Support various formats: magicappdev://auth/callback, magicappdev://callback, etc.
-
         const isAuthCallback =
           url.protocol === "magicappdev:" &&
           (url.pathname.includes("callback") || url.host.includes("callback"));
@@ -239,9 +179,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           console.log("OAuth callback detected, processing tokens...");
 
           // Try to get tokens from both search params and hash fragment
-
           const fragmentParams = new URLSearchParams(url.hash.substring(1));
-
           const accessToken =
             url.searchParams.get("accessToken") ||
             url.searchParams.get("access_token") ||
@@ -257,24 +195,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           const error =
             url.searchParams.get("error") || fragmentParams.get("error");
 
-          console.log(
-            "Tokens found - access:",
-
-            !!accessToken,
-
-            "refresh:",
-
-            !!refreshToken,
-          );
-
           alert(
-            `Callback results - Access: ${!!accessToken}, Refresh: ${!!refreshToken}, Error: ${error || "none"}`,
+            `DEBUG: Tokens extracted: Access=${!!accessToken}, Refresh=${!!refreshToken}, Error=${error || "none"}`,
           );
 
           if (error) {
             console.error("OAuth error from URL:", error);
             alert(`Login failed: ${error}`);
-            return;
+            return false;
           }
 
           if (accessToken && refreshToken) {
@@ -284,60 +212,109 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               console.log(
                 "OAuth successful, closing browser and navigating...",
               );
+              alert(`DEBUG: Auth Success! User: ${userData.email}`);
               Browser.close();
               // Force navigation to home tab
               navigate("/tabs/home");
+              return true;
             } else {
               console.error("Failed to fetch user data with received tokens");
+              return false;
             }
-          } else {
-            console.error(
-              "Missing tokens in callback URL. Params present:",
-              Array.from(url.searchParams.keys()),
-            );
           }
         }
+        return false;
       } catch (e) {
         console.error("Failed to parse deep link URL:", e);
+        return false;
       } finally {
         processingDeepLinkRef.current = false;
-        setIsLoading(false);
+        // Don't set isLoading(false) here, initialize will handle it
       }
     };
 
-    loadAuth();
+    const loadAuth = async () => {
+      console.log("Loading auth state from storage...");
+      const accessToken = await storage.getItem("access_token");
+      const refreshToken = await storage.getItem("refresh_token");
 
-    // Check for launch URL (cold start)
-    App.getLaunchUrl().then(urlData => {
-      if (urlData?.url) {
-        console.log("App launched with URL (cold start):", urlData.url);
-        handleDeepLink(urlData.url);
+      if (accessToken) {
+        api.setToken(accessToken);
+        try {
+          console.log("Fetching current user...");
+          const userData = await api.getCurrentUser();
+          console.log("User data received:", userData?.email);
+          setUser(userData);
+        } catch (e) {
+          console.warn(
+            "Access token failed or expired:",
+            e instanceof Error ? e.message : String(e),
+          );
+          if (refreshToken) {
+            try {
+              const newToken = await api.refresh(refreshToken);
+              await storage.setItem("access_token", newToken);
+              const userData = await api.getCurrentUser();
+              setUser(userData);
+            } catch {
+              console.log("Refresh failed, logging out...");
+              await handleLogout();
+            }
+          } else {
+            console.log("No refresh token, logging out...");
+            await handleLogout();
+          }
+        }
       }
-    });
+    };
+
+    const initialize = async () => {
+      setIsLoading(true);
+      try {
+        // 1. Check for cold start deep link
+        const launchUrl = await App.getLaunchUrl();
+        if (launchUrl?.url) {
+          console.log("App launched with URL (cold start):", launchUrl.url);
+          const handled = await handleDeepLink(launchUrl.url);
+          if (handled) return; // Stop if deep link was handled successfully
+        }
+
+        // 2. Load from storage
+        await loadAuth();
+      } finally {
+        if (!processingDeepLinkRef.current) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    initialize();
 
     // Handle deep links for OAuth callbacks (running in background)
     const appUrlOpenListener = App.addListener(
       "appUrlOpen",
       async (data: { url: string }) => {
         console.log("=== OAuth Callback Received (Listener) ===");
-        handleDeepLink(data.url);
+        const handled = await handleDeepLink(data.url);
+        if (handled) {
+          setIsLoading(false);
+        }
       },
     );
 
     // Check for OAuth callback in URL on load (web)
     const urlParams = new URLSearchParams(window.location.search);
-    const accessToken = urlParams.get("accessToken");
-    const refreshToken = urlParams.get("refreshToken");
-    if (accessToken && refreshToken) {
+    const webAt = urlParams.get("accessToken") || urlParams.get("access_token");
+    const webRt =
+      urlParams.get("refreshToken") || urlParams.get("refresh_token");
+    if (webAt && webRt) {
       (async () => {
         setIsLoading(true);
-        const userData = await saveTokens(accessToken, refreshToken);
+        const userData = await saveTokens(webAt, webRt);
         if (userData) {
-          // Set loading to false - navigation will be handled by useEffect watching user state
-          setIsLoading(false);
-        } else {
-          setIsLoading(false);
+          navigate("/tabs/home");
         }
+        setIsLoading(false);
       })();
     }
 

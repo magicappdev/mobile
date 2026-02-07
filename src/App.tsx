@@ -115,7 +115,9 @@ const Tabs: React.FC = () => {
 const AppRoutes: React.FC = () => {
   const { user, isLoading } = useAuth();
 
-  console.log("AppRoutes: rendering, user:", !!user, "isLoading:", isLoading);
+  console.log(
+    `[ROUTER] Render: user=${!!user}, isLoading=${isLoading}, path=${window.location.pathname}`,
+  );
 
   if (isLoading) {
     return (
@@ -136,14 +138,11 @@ const AppRoutes: React.FC = () => {
     );
   }
 
-  // Use user id as key to force a fresh router outlet when auth state changes
-  const routerKey = user ? `auth-${user.id}` : "unauth";
-
   return (
-    <IonRouterOutlet key={routerKey}>
+    <IonRouterOutlet>
       {/* Auth Routes - only accessible when logged out */}
       <Route exact path="/login">
-        {user ? <Redirect to="/tabs/home" /> : <Login />}
+        {!user ? <Login /> : <Redirect to="/tabs/home" />}
       </Route>
       <Route exact path="/register">
         {user ? <Redirect to="/tabs/home" /> : <Register />}
@@ -179,9 +178,13 @@ const AppRoutes: React.FC = () => {
       />
 
       {/* Root Redirect */}
-      <Route exact path="/">
-        <Redirect to={user ? "/tabs/home" : "/login"} />
-      </Route>
+      <Route
+        exact
+        path="/"
+        render={() =>
+          user ? <Redirect to="/tabs/home" /> : <Redirect to="/login" />
+        }
+      />
 
       {/* Fallback */}
       <Route render={() => <Redirect to={user ? "/tabs/home" : "/login"} />} />

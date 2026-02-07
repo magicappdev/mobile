@@ -13,21 +13,22 @@ export const storage = {
    */
   async getItem(key: string): Promise<string | null> {
     try {
+      console.log(`Storage: getting ${key}...`);
       // Use Capacitor Preferences for native platforms
       const { value } = await Preferences.get({ key });
       if (value !== null) {
+        console.log(`Storage: found ${key} in Preferences`);
         return value;
       }
       // Fall back to localStorage for web
-      return localStorage.getItem(key);
+      const webValue = localStorage.getItem(key);
+      console.log(
+        `Storage: ${key} in Preferences was null, web fallback: ${!!webValue}`,
+      );
+      return webValue;
     } catch (e) {
-      console.error(`Failed to get ${key}`, e);
-      // Fall back to localStorage on error
-      try {
-        return localStorage.getItem(key);
-      } catch {
-        return null;
-      }
+      console.error(`Storage: Failed to get ${key}`, e);
+      return localStorage.getItem(key);
     }
   },
 
@@ -36,18 +37,17 @@ export const storage = {
    */
   async setItem(key: string, value: string): Promise<void> {
     try {
+      console.log(`Storage: setting ${key}...`);
       // Use Capacitor Preferences for native platforms
       await Preferences.set({ key, value });
       // Also set in localStorage as backup
       localStorage.setItem(key, value);
+      console.log(
+        `Storage: successfully set ${key} in both Preferences and localStorage`,
+      );
     } catch (e) {
-      console.error(`Failed to set ${key}`, e);
-      // Fall back to localStorage only
-      try {
-        localStorage.setItem(key, value);
-      } catch {
-        throw e;
-      }
+      console.error(`Storage: Failed to set ${key}`, e);
+      localStorage.setItem(key, value);
     }
   },
 

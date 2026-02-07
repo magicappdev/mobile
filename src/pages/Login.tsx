@@ -15,6 +15,7 @@ import {
   IonContent,
   IonHeader,
   IonIcon,
+  IonImg,
   IonInput,
   IonItem,
   IonLabel,
@@ -22,8 +23,9 @@ import {
   IonPage,
   IonTitle,
   IonToolbar,
+  useIonViewWillEnter,
 } from "@ionic/react";
-import { logoGithub, logoDiscord } from "ionicons/icons";
+import { logoDiscord, logoGithub } from "ionicons/icons";
 import { Redirect, useHistory } from "react-router-dom";
 import React, { useEffect, useState } from "react";
 import { useAuth } from "../contexts/AuthContext";
@@ -37,6 +39,14 @@ export default function Login() {
   const history = useHistory();
 
   console.log("Login: rendering, user authenticated:", !!user);
+
+  // Ionic specific lifecycle hook for redirection
+  useIonViewWillEnter(() => {
+    if (user) {
+      console.log("Login: useIonViewWillEnter - User detected, redirecting...");
+      history.replace("/tabs/home");
+    }
+  });
 
   // If user is already authenticated, redirect to home
   useEffect(() => {
@@ -91,7 +101,21 @@ export default function Login() {
     <IonPage>
       <IonHeader>
         <IonToolbar>
-          <IonTitle>Sign In</IonTitle>
+          <IonImg
+            src="./favicon.png"
+            alt="MagicAppDev Logo"
+            style={{ width: "32px", height: "32px" }}
+          />
+          <IonTitle
+            style={{
+              fontSize: "16px",
+              fontWeight: "800",
+              marginLeft: "25px",
+              marginTop: "-24px",
+            }}
+          >
+            Sign In
+          </IonTitle>
         </IonToolbar>
       </IonHeader>
       <IonContent className="ion-padding">
