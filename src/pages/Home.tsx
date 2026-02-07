@@ -15,13 +15,27 @@ import {
   IonPage,
   IonTitle,
   IonToolbar,
+  useIonRouter,
 } from "@ionic/react";
 import { useTheme } from "../contexts/ThemeContext";
+import { useHistory } from "react-router-dom";
 import { flash } from "ionicons/icons";
 import React from "react";
 
 export default function Home() {
   const { theme } = useTheme();
+  const history = useHistory();
+  const ionRouter = useIonRouter();
+
+  const startChatting = () => {
+    console.log("Navigating to chat...");
+    // Try both methods for maximum compatibility
+    if (ionRouter.canGoBack()) {
+      ionRouter.push("/tabs/chat");
+    } else {
+      history.push("/tabs/chat");
+    }
+  };
 
   return (
     <IonPage>
@@ -80,7 +94,7 @@ export default function Home() {
               Our AI-powered platform helps you generate code, create
               components, and deploy applications faster than ever before.
             </p>
-            <IonButton expand="block" fill="outline" href="/tabs/chat">
+            <IonButton expand="block" fill="outline" onClick={startChatting}>
               Start Chatting
             </IonButton>
           </IonCardContent>

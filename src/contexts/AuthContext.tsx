@@ -10,6 +10,7 @@
 /* eslint-disable react-refresh/only-export-components */
 import React, {
   createContext,
+  useCallback,
   useContext,
   useEffect,
   useRef,
@@ -56,30 +57,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     hasNavigatedRef.current = false; // Reset navigation flag on logout
   };
 
-  const saveTokens = async (
-    accessToken: string,
-    refreshToken: string,
-  ): Promise<User | null> => {
-    console.log("Saving tokens...");
-    try {
-      await storage.setItem("access_token", accessToken);
-      await storage.setItem("refresh_token", refreshToken);
-      api.setToken(accessToken);
-      console.log("Fetching user data...");
-      const userData = await api.getCurrentUser();
-      console.log("User data received, setting user:", userData?.email);
-      setUser(userData);
-      // Wait longer for React and Ionic to synchronize
-      await new Promise(resolve => setTimeout(resolve, 500));
-      return userData;
-    } catch (e) {
-      console.error("Failed to fetch user after login:", e);
-      alert(
-        `Authentication failed during profile fetch: ${e instanceof Error ? e.message : "Unknown error"}`,
-      );
-      return null;
-    }
-  };
+  const saveTokens = useCallback(
+    async (accessToken: string, refreshToken: string): Promise<User | null> => {
+      console.log("Saving tokens...");
+      try {
+        await storage.setItem("access_token", accessToken);
+        await storage.setItem("refresh_token", refreshToken);
+        api.setToken(accessToken);
+        console.log("Fetching user data...");
+        const userData = await api.getCurrentUser();
+        console.log("User data received, setting user:", userData?.email);
+        setUser(userData);
+        // Wait longer for React and Ionic to synchronize
+        await new Promise(resolve => setTimeout(resolve, 500));
+        return userData;
+      } catch (e) {
+        console.error("Failed to fetch user after login:", e);
+        alert(
+          `Authentication failed during profile fetch: ${e instanceof Error ? e.message : "Unknown error"}`,
+        );
+        return null;
+      }
+    },
+    [],
+  );
 
   const login = async (email: string, password: string) => {
     try {
@@ -104,61 +105,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  // Handle navigation based on auth state
-  useEffect(() => {
-    // Only navigate if user is authenticated and not loading
-    if (user && !isLoading) {
-      // Use window.location.pathname as a hint, but we might also check history state
-      const currentPath = window.location.pathname;
-      console.log(
-        "Auth navigation check - current path:",
-        currentPath,
-        "user:",
-        user.email,
-      );
-
-      // Check if we're on an auth-related path or the callback path
-      // On native, currentPath might be index.html or empty string sometimes
-      const isAuthPath =
-        [
-          "/login",
-          "/register",
-          "/",
-          "/auth/callback",
-          "/index.html",
-          "",
-        ].includes(currentPath) ||
-        currentPath.startsWith("/auth/") ||
-        !currentPath.includes("/tabs/");
-
-      if (isAuthPath) {
-        if (!hasNavigatedRef.current) {
-          console.log(
-            "User authenticated on auth path, navigating to tabs home...",
-          );
-          hasNavigatedRef.current = true;
-          navigate("/tabs/home");
-        } else {
-          console.log(
-            "Already navigated once, but still on auth path. Forcing navigation again.",
-          );
-          navigate("/tabs/home");
-        }
-      } else {
-        // Already on a protected route, mark as navigated
-        console.log("Already on protected route:", currentPath);
-        hasNavigatedRef.current = true;
-      }
-    }
-    // Reset navigation flag when user logs out (user becomes null)
-    if (!user && !isLoading) {
-      hasNavigatedRef.current = false;
-    }
-  }, [user, isLoading, navigate]);
-
-  useEffect(() => {
-    // Helper to process deep link URLs
-    const handleDeepLink = async (urlString: string): Promise<boolean> => {
+  // Helper to process deep link URLs
+  const handleDeepLink = useCallback(
+    async (urlString: string): Promise<boolean> => {
       console.log("Processing deep link URL:", urlString);
 
       try {
@@ -233,8 +182,63 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         console.error("Failed to parse deep link URL:", e);
         return false;
       }
-    };
+    },
+    [navigate, saveTokens],
+  );
 
+  // Handle navigation based on auth state
+  useEffect(() => {
+    // Only navigate if user is authenticated and not loading
+    if (user && !isLoading) {
+      // Use window.location.pathname as a hint, but we might also check history state
+      const currentPath = window.location.pathname;
+      console.log(
+        "Auth navigation check - current path:",
+        currentPath,
+        "user:",
+        user.email,
+      );
+
+      // Check if we're on an auth-related path or the callback path
+      // On native, currentPath might be index.html or empty string sometimes
+      const isAuthPath =
+        [
+          "/login",
+          "/register",
+          "/",
+          "/auth/callback",
+          "/index.html",
+          "",
+        ].includes(currentPath) ||
+        currentPath.startsWith("/auth/") ||
+        !currentPath.includes("/tabs/");
+
+      if (isAuthPath) {
+        if (!hasNavigatedRef.current) {
+          console.log(
+            "User authenticated on auth path, navigating to tabs home...",
+          );
+          hasNavigatedRef.current = true;
+          navigate("/tabs/home");
+        } else {
+          console.log(
+            "Already navigated once, but still on auth path. Forcing navigation again.",
+          );
+          navigate("/tabs/home");
+        }
+      } else {
+        // Already on a protected route, mark as navigated
+        console.log("Already on protected route:", currentPath);
+        hasNavigatedRef.current = true;
+      }
+    }
+    // Reset navigation flag when user logs out (user becomes null)
+    if (!user && !isLoading) {
+      hasNavigatedRef.current = false;
+    }
+  }, [user, isLoading, navigate]);
+
+  useEffect(() => {
     const loadAuth = async () => {
       console.log("Loading auth state from storage...");
       const accessToken = await storage.getItem("access_token");
@@ -294,20 +298,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
 
     initialize();
+  }, [handleDeepLink]);
 
-    // Handle deep links for OAuth callbacks (running in background)
+  // Separate effect for deep link listener to ensure it's always active
+  useEffect(() => {
+    console.log("Setting up App.appUrlOpen listener...");
     const appUrlOpenListener = App.addListener(
       "appUrlOpen",
       async (data: { url: string }) => {
         console.log("=== OAuth Callback Received (Listener) ===");
-        const handled = await handleDeepLink(data.url);
-        if (handled) {
-          setIsLoading(false);
-        }
+        console.log("Deep link URL:", data.url);
+
+        // Use a small delay to ensure the OS has finished the transition
+        setTimeout(async () => {
+          await handleDeepLink(data.url);
+        }, 100);
       },
     );
 
-    // Check for OAuth callback in URL on load (web)
+    return () => {
+      console.log("Removing App.appUrlOpen listener...");
+      appUrlOpenListener.then(listener => listener.remove());
+    };
+  }, [handleDeepLink]); // Depend on stable handleDeepLink
+
+  // Check for OAuth callback in URL on load (web)
+  useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const webAt = urlParams.get("accessToken") || urlParams.get("access_token");
     const webRt =
@@ -322,12 +338,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setIsLoading(false);
       })();
     }
-
-    return () => {
-      appUrlOpenListener.then(listener => listener.remove());
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [navigate, saveTokens]);
 
   // GitHub OAuth
   const loginWithGitHub = async () => {
