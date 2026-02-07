@@ -52,7 +52,7 @@ export class ApiClient {
       headers["Authorization"] = `Bearer ${this.accessToken}`;
     }
 
-    console.log(`[API] Requesting: ${options.method || "GET"} ${url}`);
+    console.log("[API] Requesting: %s %s", options.method || "GET", url);
 
     try {
       const response = await fetch(url, {
@@ -60,7 +60,11 @@ export class ApiClient {
         headers,
       });
 
-      console.log(`[API] Response: ${response.status} ${response.statusText}`);
+      console.log(
+        "[API] Response: %d %s",
+        response.status,
+        response.statusText,
+      );
 
       if (!response.ok) {
         const errorData = (await response
@@ -77,7 +81,7 @@ export class ApiClient {
 
       return response.json() as Promise<unknown>;
     } catch (e) {
-      console.error(`[API] Request Error for ${url}:`, e);
+      console.error("[API] Request Error for %s:", url, e);
       throw e;
     }
   }
