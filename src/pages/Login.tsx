@@ -6,7 +6,6 @@
 
 import {
   IonButton,
-  IonButtons,
   IonCard,
   IonCardContent,
   IonCardHeader,
@@ -14,7 +13,6 @@ import {
   IonCardTitle,
   IonContent,
   IonHeader,
-  IonIcon,
   IonImg,
   IonInput,
   IonItem,
@@ -25,7 +23,6 @@ import {
   IonToolbar,
   useIonViewWillEnter,
 } from "@ionic/react";
-import { logoDiscord, logoGithub } from "ionicons/icons";
 import { Redirect, useHistory } from "react-router-dom";
 import React, { useEffect, useState } from "react";
 import { useAuth } from "../contexts/AuthContext";
@@ -35,7 +32,7 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { login, loginWithGitHub, loginWithDiscord, user } = useAuth();
+  const { login, user } = useAuth();
   const history = useHistory();
 
   console.log("Login: rendering, user authenticated:", !!user);
@@ -78,22 +75,6 @@ export default function Login() {
       setError(message);
     } finally {
       setIsLoading(false);
-    }
-  };
-
-  const handleGitHubLogin = async () => {
-    try {
-      await loginWithGitHub();
-    } catch (error) {
-      console.error("GitHub login failed:", error);
-    }
-  };
-
-  const handleDiscordLogin = async () => {
-    try {
-      await loginWithDiscord();
-    } catch (error) {
-      console.error("Discord login failed:", error);
     }
   };
 
@@ -186,25 +167,7 @@ export default function Login() {
           </IonCardContent>
         </IonCard>
 
-        <div
-          style={{
-            textAlign: "center",
-            marginTop: "20px",
-            marginBottom: "20px",
-          }}
-        >
-          <p>Or continue with</p>
-          <IonButtons style={{ justifyContent: "center", gap: "8px" }}>
-            <IonButton onClick={handleGitHubLogin} fill="outline">
-              <IonIcon slot="start" icon={logoGithub} />
-              GitHub
-            </IonButton>
-            <IonButton onClick={handleDiscordLogin} fill="outline">
-              <IonIcon slot="start" icon={logoDiscord} />
-              Discord
-            </IonButton>
-          </IonButtons>
-        </div>
+        {/* OAuth login disabled for now as requested */}
 
         <div style={{ textAlign: "center", marginTop: "20px" }}>
           <p>

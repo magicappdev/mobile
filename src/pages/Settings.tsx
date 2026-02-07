@@ -43,7 +43,7 @@ interface LinkedAccount {
 }
 
 export default function Settings() {
-  const { user, logout } = useAuth();
+  const { user, logout, loginWithGitHub, loginWithDiscord } = useAuth();
   const { mode, setMode, isDark } = useTheme();
   const history = useHistory();
   const [linkedAccounts, setLinkedAccounts] = useState<LinkedAccount[]>([]);
@@ -94,6 +94,18 @@ export default function Settings() {
     }
   };
 
+  const handleLinkProvider = async (provider: string) => {
+    try {
+      if (provider === "github") {
+        await loginWithGitHub();
+      } else if (provider === "discord") {
+        await loginWithDiscord();
+      }
+    } catch (error) {
+      console.error(`Failed to link ${provider}:`, error);
+    }
+  };
+
   const isProviderLinked = (provider: string) => {
     return linkedAccounts.some(acc => acc.provider === provider);
   };
@@ -138,22 +150,38 @@ export default function Settings() {
                   <IonItem>
                     <IonIcon icon={logoGithub} slot="start" />
                     <IonLabel>GitHub</IonLabel>
-                    <IonLabel
-                      slot="end"
-                      color={isProviderLinked("github") ? "success" : "medium"}
-                    >
-                      {isProviderLinked("github") ? "Linked" : "Not Linked"}
-                    </IonLabel>
+                    {isProviderLinked("github") ? (
+                      <IonLabel slot="end" color="success">
+                        Linked
+                      </IonLabel>
+                    ) : (
+                      <IonButton
+                        slot="end"
+                        fill="clear"
+                        size="small"
+                        onClick={() => handleLinkProvider("github")}
+                      >
+                        Link
+                      </IonButton>
+                    )}
                   </IonItem>
                   <IonItem>
                     <IonIcon icon={logoDiscord} slot="start" />
                     <IonLabel>Discord</IonLabel>
-                    <IonLabel
-                      slot="end"
-                      color={isProviderLinked("discord") ? "success" : "medium"}
-                    >
-                      {isProviderLinked("discord") ? "Linked" : "Not Linked"}
-                    </IonLabel>
+                    {isProviderLinked("discord") ? (
+                      <IonLabel slot="end" color="success">
+                        Linked
+                      </IonLabel>
+                    ) : (
+                      <IonButton
+                        slot="end"
+                        fill="clear"
+                        size="small"
+                        onClick={() => handleLinkProvider("discord")}
+                      >
+                        Link
+                      </IonButton>
+                    )}
                   </IonItem>
                 </>
               )}

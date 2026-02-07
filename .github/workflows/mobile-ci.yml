@@ -98,4 +98,3 @@ jobs:
         if: github.ref_type == 'tag'
         with:
           files: android/app/build/outputs/apk/release/*.apk
-
