@@ -52,6 +52,7 @@ import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { ThemeProvider } from "./contexts/ThemeContext";
 
 /* Pages */
+import ProjectDetail from "./pages/ProjectDetail";
 import Settings from "./pages/Settings";
 import Register from "./pages/Register";
 import Projects from "./pages/Projects";
@@ -80,6 +81,7 @@ const Tabs: React.FC = () => {
         <Route exact path="/tabs/home" component={Home} />
         <Route exact path="/tabs/chat" component={Chat} />
         <Route exact path="/tabs/projects" component={Projects} />
+        <Route exact path="/tabs/projects/:id" component={ProjectDetail} />
         <Route exact path="/tabs/settings" component={Settings} />
         <Route exact path="/tabs" render={() => <Redirect to="/tabs/home" />} />
       </IonRouterOutlet>
