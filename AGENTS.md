@@ -141,7 +141,7 @@ Routes are protected by authentication state:
 Ensure all dependencies are installed:
 
 ```bash
-pnpm install
+bun install
 ```
 
 #### Development Modes
@@ -149,7 +149,7 @@ pnpm install
 **Web Development** (fastest iteration):
 
 ```bash
-pnpm dev
+bun dev
 ```
 
 - Starts Vite dev server at `http://localhost:5173`
@@ -159,7 +159,7 @@ pnpm dev
 **Android Development**:
 
 ```bash
-pnpm android
+bun android
 ```
 
 - Runs app on connected Android device/emulator
@@ -169,7 +169,7 @@ pnpm android
 **iOS Development**:
 
 ```bash
-npx ionic capacitor open ios
+bunx ionic capacitor open ios
 ```
 
 - Opens project in Xcode
@@ -179,10 +179,10 @@ npx ionic capacitor open ios
 ### Code Changes Workflow
 
 1. **Make changes to source code**
-2. **Type check**: `pnpm typecheck`
-3. **Lint**: `pnpm lint`
-4. **Build**: `pnpm build`
-5. **Sync to native**: `pnpm ionic:sync`
+2. **Type check**: `bun typecheck`
+3. **Lint**: `bun lint`
+4. **Build**: `bun build`
+5. **Sync to native**: `bun ionic:sync`
 6. **Test on platform**: Use appropriate development mode
 
 ### Testing Workflow
@@ -192,7 +192,7 @@ npx ionic capacitor open ios
 Run unit tests using Vitest:
 
 ```bash
-pnpm test.unit
+bun run test.unit
 ```
 
 **Test Structure**:
@@ -206,7 +206,7 @@ pnpm test.unit
 Run E2E tests using Cypress:
 
 ```bash
-pnpm test.e2e
+bun run test.e2e
 ```
 
 **Test Location**: [`cypress/e2e/`](cypress/e2e/)
@@ -260,6 +260,7 @@ The project uses TypeScript strict mode. Follow these rules:
    ```
 
 4. **Type Imports**: Import types using `import type`
+
    ```typescript
    import type { User } from "./types";
    ```
@@ -851,13 +852,13 @@ const MyComponent: React.FC = () => {
 
 ```bash
 # Build web assets
-pnpm build
+bun build
 
 # Sync to native platforms
-pnpm ionic:sync
+bun ionic:sync
 
 # Open in native IDE
-npx ionic capacitor open android  # or ios
+bunx ionic capacitor open android  # or ios
 ```
 
 #### Build Artifacts
@@ -1022,7 +1023,7 @@ const ProjectsPage = React.lazy(() => import("./pages/Projects"));
 
 ### Bundle Size Reduction
 
-- Analyze bundle size: `pnpm build -- --mode production --report`
+- Analyze bundle size: `bun run build -- --mode production --report`
 - Remove unused dependencies
 - Use tree-shaking
 - Enable production optimizations in Vite
@@ -1188,10 +1189,10 @@ export default defineConfig({
 ```bash
 # Clean build
 rm -rf dist
-pnpm build
+bun build
 
 # Force sync
-npx ionic cap sync --force
+bunx ionic cap sync --force
 ```
 
 #### Android Build Errors
@@ -1221,11 +1222,11 @@ npx ionic cap sync --force
 
 ```bash
 # Reinstall dependencies
-rm -rf node_modules pnpm-lock.yaml
-pnpm install
+rm -rf node_modules bun.lock
+bun install
 
 # Update types
-pnpm typecheck
+bun typecheck
 ```
 
 ### Debugging
@@ -1262,8 +1263,8 @@ Access Vite debug features at `http://localhost:5173/__devtools/`
 
 ### Code Quality
 
-1. Run `pnpm lint` before committing
-2. Run `pnpm typecheck` to catch type errors
+1. Run `bun lint` before committing
+2. Run `bun typecheck` to catch type errors
 3. Write self-documenting code
 4. Keep components small and focused
 5. Use consistent naming conventions
@@ -1291,9 +1292,9 @@ Access Vite debug features at `http://localhost:5173/__devtools/`
 
 1. Read this documentation thoroughly
 2. Set up local development environment
-3. Run the full test suite: `pnpm test.unit`
-4. Ensure code passes linting: `pnpm lint`
-5. Verify type checking: `pnpm typecheck`
+3. Run the full test suite: `bun test.unit`
+4. Ensure code passes linting: `bun lint`
+5. Verify type checking: `bun typecheck`
 
 ### Pull Request Process
 

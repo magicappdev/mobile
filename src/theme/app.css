@@ -44,7 +44,8 @@ ion-content.app-auth-content {
   background: var(--app-surface-elevated-color, var(--ion-card-background));
   border: 1px solid var(--app-border-color, var(--app-border-subtle-color));
   border-radius: var(--app-radius-lg);
-  box-shadow: 0 18px 40px -24px var(--app-shadow-color, var(--app-shadow-elevated));
+  box-shadow: 0 18px 40px -24px
+    var(--app-shadow-color, var(--app-shadow-elevated));
 }
 
 .app-card--muted {

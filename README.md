@@ -35,7 +35,7 @@ MagicAppDev Mobile enables users to interact with AI agents, manage projects, an
 Before you begin, ensure you have the following installed:
 
 - **Node.js** 18.x or higher
-- **pnpm** 8.x or higher (recommended package manager)
+- **bun** 1.3.10
 - **Android Studio** (for Android development)
 - **Xcode** 15.x or higher (for iOS development, macOS only)
 
@@ -51,13 +51,13 @@ Before you begin, ensure you have the following installed:
 2. **Install dependencies**
 
    ```bash
-   pnpm install
+   bun install
    ```
 
 3. **Sync Capacitor platforms**
 
    ```bash
-   pnpm ionic:sync
+   bun ionic:sync
    ```
 
 4. **Configure environment variables**
@@ -69,41 +69,41 @@ The following npm scripts are available for local development and production bui
 
 ### Development
 
-- **`pnpm dev`**: Start the Vite development server for web-based development
-- **`pnpm android`**: Run the app on an Android device/emulator with live reload and external access
-- **`pnpm preview`**: Preview the production build locally
+- **`bun dev`**: Start the Vite development server for web-based development
+- **`bun android`**: Run the app on an Android device/emulator with live reload and external access
+- **`bun preview`**: Preview the production build locally
 
 ### Building
 
-- **`pnpm build`**: Compile TypeScript and build for production using Vite
-- **`pnpm prebuild`**: Run TypeScript type checking before build (automatically runs with build)
-- **`pnpm ionic:build`**: Build the Ionic application (alias for build)
+- **`bun build`**: Compile TypeScript and build for production using Vite
+- **`bun prebuild`**: Run TypeScript type checking before build (automatically runs with build)
+- **`bun ionic:build`**: Build the Ionic application (alias for build)
 
 ### Capacitor Operations
 
-- **`pnpm ionic:sync`**: Sync web assets to native platforms (required after code changes)
+- **`bun ionic:sync`**: Sync web assets to native platforms (required after code changes)
 
 ### Code Quality
 
-- **`pnpm lint`**: Run ESLint to check code quality
-- **`pnpm typecheck`**: Run TypeScript compiler to verify type correctness without emitting files
+- **`bun lint`**: Run ESLint to check code quality
+- **`bun typecheck`**: Run TypeScript compiler to verify type correctness without emitting files
 
 ### Testing
 
-- **`pnpm test.unit`**: Run unit tests using Vitest
-- **`pnpm test.e2e`**: Run end-to-end tests using Cypress
+- **`bun test.unit`**: Run unit tests using Vitest
+- **`bun test.e2e`**: Run end-to-end tests using Cypress
 
 ### Ionic-Specific Commands
 
-Additional Ionic CLI commands can be executed using npx:
+Additional Ionic CLI commands can be executed using bunx:
 
 ```bash
-npx ionic capacitor add ios          # Add iOS platform
-npx ionic capacitor add android     # Add Android platform
-npx ionic capacitor open ios         # Open iOS project in Xcode
-npx ionic capacitor open android     # Open Android project in Android Studio
-npx ionic capacitor build ios        # Build iOS app
-npx ionic capacitor build android    # Build Android app
+bunx ionic capacitor add ios          # Add iOS platform
+bunx ionic capacitor add android     # Add Android platform
+bunx ionic capacitor open ios         # Open iOS project in Xcode
+bunx ionic capacitor open android     # Open Android project in Android Studio
+bunx ionic capacitor build ios        # Build iOS app
+bunx ionic capacitor build android    # Build Android app
 ```
 
 ## Project Structure
@@ -206,7 +206,7 @@ The [`vite.config.ts`](vite.config.ts) file configures the build tool with React
 For rapid development without native platforms:
 
 ```bash
-pnpm dev
+bun dev
 ```
 
 This starts the Vite dev server at `http://localhost:5173`.
@@ -219,18 +219,18 @@ For testing on actual devices or emulators:
 
 ```bash
 # Ensure Android device/emulator is connected
-pnpm android
+bun android
 ```
 
 **iOS:**
 
 ```bash
 # Add iOS platform (first time only)
-npx ionic capacitor add ios
+bunx ionic capacitor add ios
 
 # Sync and open in Xcode
-pnpm ionic:sync
-npx ionic capacitor open ios
+bun ionic:sync
+bunx ionic capacitor open ios
 ```
 
 ### Building for Production
@@ -238,19 +238,19 @@ npx ionic capacitor open ios
 1. **Build the web application**
 
    ```bash
-   pnpm build
+   bun build
    ```
 
 2. **Sync to native platforms**
 
    ```bash
-   pnpm ionic:sync
+   bun ionic:sync
    ```
 
 3. **Open in native IDE and build**
 
    ```bash
-   npx ionic capacitor open android  # or ios
+   bunx ionic capacitor open android  # or ios
    ```
 
 ## Architecture
@@ -310,7 +310,7 @@ Theme values are defined in [`src/constants/theme.ts`](src/constants/theme.ts) a
 Run unit tests with Vitest:
 
 ```bash
-pnpm test.unit
+bun test.unit
 ```
 
 Tests are configured to use jsdom environment with global test variables.
@@ -320,7 +320,7 @@ Tests are configured to use jsdom environment with global test variables.
 Run E2E tests with Cypress:
 
 ```bash
-pnpm test.e2e
+bun test.e2e
 ```
 
 Cypress configuration is defined in [`cypress.config.ts`](cypress.config.ts).
@@ -331,8 +331,8 @@ Cypress configuration is defined in [`cypress.config.ts`](cypress.config.ts).
 
 **Capacitor sync fails**
 
-- Ensure the native platform is added: `npx ionic capacitor add android` or `npx ionic capacitor add ios`
-- Check that the build output exists: `pnpm build` before running `pnpm ionic:sync`
+- Ensure the native platform is added: `bunx ionic capacitor add android` or `bunx ionic capacitor add ios`
+- Check that the build output exists: `bun build` before running `bun ionic:sync`
 
 **Android build errors on Windows**
 
@@ -342,19 +342,19 @@ Cypress configuration is defined in [`cypress.config.ts`](cypress.config.ts).
 
 **TypeScript errors during build**
 
-- Run `pnpm typecheck` to identify type issues
-- Ensure all dependencies are installed: `pnpm install`
+- Run `bun typecheck` to identify type issues
+- Ensure all dependencies are installed: `bun install`
 
 **Hot module replacement not working**
 
-- Use `pnpm dev` for web development
-- For native, use `pnpm android` which enables live reload
+- Use `bun dev` for web development
+- For native, use `bun android` which enables live reload
 
 ## Contributing
 
 When contributing to this project:
 
-1. Run the full quality check before committing: `pnpm lint && pnpm typecheck`
+1. Run the full quality check before committing: `bun lint && bun typecheck`
 2. Follow the existing code style and patterns
 3. Add tests for new features
 4. Update documentation as needed
