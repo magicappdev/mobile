@@ -8,17 +8,17 @@ import {
   IonContent,
   IonHeader,
   IonIcon,
-  IonItem,
-  IonLabel,
-  IonList,
   IonPage,
   IonToolbar,
   IonRefresher,
   IonRefresherContent,
+  IonSpinner,
   RefresherEventDetail,
 } from "@ionic/react";
+import { getProjectStatusMeta } from "../lib/project-status";
+import { add, build, chevronForward } from "ionicons/icons";
 import React, { useState, useEffect } from "react";
-import { add, build } from "ionicons/icons";
+import { useHistory } from "react-router-dom";
 import { IonTitle } from "@ionic/react";
 import type { Project } from "../types";
 import { api } from "../lib/api";
@@ -26,6 +26,8 @@ import { api } from "../lib/api";
 export default function Projects() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const history = useHistory();
+  const createProjectRoute = `/tabs/chat?prompt=${encodeURIComponent("Help me create a new app and outline the first screen.")}`;
 
   const loadProjects = async () => {
     try {
@@ -48,17 +50,11 @@ export default function Projects() {
     event.detail.complete();
   };
 
-  const getStatusColor = (status: Project["status"]) => {
-    switch (status) {
-      case "active":
-        return "var(--ion-color-success)";
-      case "deployed":
-        return "var(--ion-color-primary)";
-      case "archived":
-        return "var(--ion-color-medium)";
-      default:
-        return "var(--ion-color-warning)";
-    }
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString([], {
+      month: "short",
+      day: "numeric",
+    });
   };
 
   return (
@@ -67,61 +63,108 @@ export default function Projects() {
         <IonToolbar>
           <IonTitle>Projects</IonTitle>
           <IonButtons slot="end">
-            <IonButton href="/tabs/projects/new">
+            <IonButton routerLink={createProjectRoute}>
               <IonIcon slot="icon-only" icon={add} />
             </IonButton>
           </IonButtons>
         </IonToolbar>
       </IonHeader>
-      <IonContent>
+      <IonContent className="app-page-content">
         <IonRefresher slot="fixed" onIonRefresh={handleRefresh}>
           <IonRefresherContent />
         </IonRefresher>
 
-        {!isLoading && projects.length === 0 && (
-          <div style={{ textAlign: "center", padding: "40px" }}>
-            <IonIcon
-              icon={build}
-              style={{
-                fontSize: "64px",
-                color: "var(--ion-color-medium)",
-                marginBottom: "16px",
-              }}
-            />
-            <h2>No Projects Yet</h2>
-            <p style={{ color: "var(--ion-color-medium)" }}>
-              Create your first project to get started
+        <div className="app-page-stack">
+          <section className="app-card app-hero-card">
+            <div className="app-eyebrow">Projects</div>
+            <h1 className="app-hero-title app-hero-title--compact">
+              Keep every build in one place
+            </h1>
+            <p className="app-hero-copy">
+              Review active work, revisit shipped apps, or jump back into the AI
+              builder to start something new.
             </p>
-            <IonButton fill="outline" href="/tabs/projects/new">
-              <IonIcon slot="start" icon={add} />
-              Create Project
-            </IonButton>
-          </div>
-        )}
+            <div className="app-chip-row">
+              <IonButton routerLink={createProjectRoute}>
+                <IonIcon slot="start" icon={add} />
+                Create with AI
+              </IonButton>
+            </div>
+          </section>
 
-        <IonList>
-          {projects.map(project => (
-            <IonItem
-              key={project.id}
-              href={`/tabs/projects/${project.id}`}
-              detail
-            >
-              <IonLabel>
-                <h2>{project.name}</h2>
-                <p>{project.description || "No description"}</p>
-                <p
-                  style={{
-                    color: getStatusColor(project.status),
-                    textTransform: "capitalize",
-                    fontWeight: "600",
-                  }}
-                >
-                  {project.status}
-                </p>
-              </IonLabel>
-            </IonItem>
-          ))}
-        </IonList>
+          {isLoading ? (
+            <section className="app-card app-empty-state">
+              <div className="app-empty-icon">
+                <IonSpinner name="crescent" />
+              </div>
+              <h2 className="app-section-title">Loading projects...</h2>
+              <p className="app-subtle-text">
+                Pulling your latest workspaces into view.
+              </p>
+            </section>
+          ) : projects.length === 0 ? (
+            <section className="app-card app-empty-state">
+              <div className="app-empty-icon">
+                <IonIcon icon={build} />
+              </div>
+              <h2 className="app-section-title">No projects yet</h2>
+              <p className="app-subtle-text">
+                Start a new build in chat and it will show up here as soon as it
+                is created.
+              </p>
+              <div
+                className="app-chip-row"
+                style={{ justifyContent: "center" }}
+              >
+                <IonButton fill="outline" routerLink={createProjectRoute}>
+                  <IonIcon slot="start" icon={add} />
+                  Open AI Builder
+                </IonButton>
+              </div>
+            </section>
+          ) : (
+            <section className="app-project-list">
+              {projects.map(project => {
+                const statusMeta = getProjectStatusMeta(project.status);
+
+                return (
+                  <button
+                    key={project.id}
+                    type="button"
+                    className="app-project-card"
+                    onClick={() => history.push(`/tabs/projects/${project.id}`)}
+                  >
+                    <div className="app-project-card-header">
+                      <div>
+                        <h2 className="app-project-card-title">
+                          {project.name}
+                        </h2>
+                        <p className="app-project-card-copy">
+                          {project.description || "No description yet."}
+                        </p>
+                      </div>
+                      <span
+                        className="app-status-pill"
+                        style={{
+                          background: statusMeta.background,
+                          color: statusMeta.color,
+                        }}
+                      >
+                        {statusMeta.label}
+                      </span>
+                    </div>
+                    <div className="app-project-card-meta">
+                      <span>Updated {formatDate(project.updatedAt)}</span>
+                      <span>
+                        Open details <IonIcon icon={chevronForward} />
+                      </span>
+                    </div>
+                  </button>
+                );
+              })}
+            </section>
+          )}
+        </div>
       </IonContent>
     </IonPage>
   );

@@ -45,6 +45,7 @@ import "@ionic/react/css/palettes/dark.system.css";
 
 /* Theme variables */
 import "./theme/variables.css";
+import "./theme/app.css";
 
 /* Context Providers */
 import { NavigationProvider } from "./contexts/NavigationContext";
@@ -86,7 +87,7 @@ const Tabs: React.FC = () => {
         <Route exact path="/tabs" render={() => <Redirect to="/tabs/home" />} />
       </IonRouterOutlet>
 
-      <IonTabBar slot="bottom">
+      <IonTabBar slot="bottom" className="app-tab-bar">
         <IonTabButton tab="home" href="/tabs/home">
           <IonIcon aria-hidden="true" icon={home} />
           <IonLabel>Home</IonLabel>
@@ -166,21 +167,11 @@ const AppRoutes: React.FC = () => {
 
       {/* Global Loading Overlay */}
       {isLoading && (
-        <div
-          style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            background: "var(--ion-background-color, #fff)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 9999,
-          }}
-        >
-          <IonSpinner name="crescent" />
+        <div className="app-route-loading-overlay">
+          <div className="app-route-loading-card">
+            <IonSpinner name="crescent" />
+            <p>Loading your workspace...</p>
+          </div>
         </div>
       )}
     </>

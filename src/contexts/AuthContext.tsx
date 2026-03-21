@@ -23,12 +23,24 @@ import { storage } from "../lib/storage";
 import { App } from "@capacitor/app";
 import type { User } from "../types";
 
+interface RegisterInput {
+  name: string;
+  email: string;
+  password: string;
+  turnstileToken?: string;
+}
+
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
   loginWithGitHub: () => Promise<void>;
   loginWithDiscord: () => Promise<void>;
-  login: (email: string, password: string) => Promise<void>;
+  login: (
+    email: string,
+    password: string,
+    turnstileToken?: string,
+  ) => Promise<void>;
+  register: (input: RegisterInput) => Promise<void>;
   logout: () => Promise<void>;
 }
 
@@ -82,9 +94,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     [],
   );
 
-  const login = async (email: string, password: string) => {
+  const login = async (
+    email: string,
+    password: string,
+    turnstileToken?: string,
+  ) => {
     try {
-      const response = (await api.login({ email, password })) as ApiResponse<{
+      const response = (await api.login({
+        email,
+        password,
+        turnstileToken,
+      })) as ApiResponse<{
         accessToken: string;
         refreshToken: string;
       }>;
@@ -98,6 +118,39 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       } else {
         throw new Error(response.error.message || "Login failed");
+      }
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : "An error occurred";
+      throw new Error(message);
+    }
+  };
+
+  const register = async ({
+    name,
+    email,
+    password,
+    turnstileToken,
+  }: RegisterInput) => {
+    try {
+      const response = (await api.register({
+        name,
+        email,
+        password,
+        turnstileToken,
+      })) as ApiResponse<{
+        accessToken: string;
+        refreshToken: string;
+      }>;
+      if (response.success) {
+        const userData = await saveTokens(
+          response.data.accessToken,
+          response.data.refreshToken,
+        );
+        if (!userData) {
+          throw new Error("Failed to initialize session");
+        }
+      } else {
+        throw new Error(response.error.message || "Registration failed");
       }
     } catch (e: unknown) {
       const message = e instanceof Error ? e.message : "An error occurred";
@@ -399,6 +452,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         loginWithGitHub,
         loginWithDiscord,
         login,
+        register,
         logout: handleLogout,
       }}
     >

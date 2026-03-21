@@ -6,14 +6,9 @@ import {
   IonBackButton,
   IonButton,
   IonButtons,
-  IonCard,
-  IonCardContent,
   IonContent,
   IonHeader,
   IonIcon,
-  IonItem,
-  IonLabel,
-  IonList,
   IonPage,
   IonToolbar,
   IonTitle,
@@ -27,12 +22,13 @@ import {
   calendarOutline,
   timeOutline,
   codeOutline,
-  rocketOutline,
   trashOutline,
   settingsOutline,
   checkmarkCircleOutline,
+  openOutline,
 } from "ionicons/icons";
 import React, { useState, useEffect, useCallback } from "react";
+import { getProjectStatusMeta } from "../lib/project-status";
 import { useParams, useHistory } from "react-router-dom";
 import type { Project } from "../types";
 import { api } from "../lib/api";
@@ -85,19 +81,6 @@ export default function ProjectDetail() {
     }
   };
 
-  const getStatusColor = (status: Project["status"]) => {
-    switch (status) {
-      case "active":
-        return "var(--ion-color-success)";
-      case "deployed":
-        return "var(--ion-color-primary)";
-      case "archived":
-        return "var(--ion-color-medium)";
-      default:
-        return "var(--ion-color-warning)";
-    }
-  };
-
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString();
   };
@@ -113,20 +96,17 @@ export default function ProjectDetail() {
             <IonTitle>Loading...</IonTitle>
           </IonToolbar>
         </IonHeader>
-        <IonContent className="ion-padding">
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              justifyContent: "center",
-              height: "100%",
-            }}
-          >
-            <IonSpinner name="crescent" />
-            <p style={{ marginTop: "16px", color: "var(--ion-color-medium)" }}>
-              Loading project details...
-            </p>
+        <IonContent className="app-page-content">
+          <div className="app-page-stack">
+            <section className="app-card app-empty-state">
+              <div className="app-empty-icon">
+                <IonSpinner name="crescent" />
+              </div>
+              <h2 className="app-section-title">Loading project details...</h2>
+              <p className="app-subtle-text">
+                Pulling the latest state for this workspace.
+              </p>
+            </section>
           </div>
         </IonContent>
       </IonPage>
@@ -144,33 +124,40 @@ export default function ProjectDetail() {
             <IonTitle>Error</IonTitle>
           </IonToolbar>
         </IonHeader>
-        <IonContent className="ion-padding">
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              justifyContent: "center",
-              height: "100%",
-            }}
-          >
-            <IonIcon
-              icon={codeOutline}
-              style={{
-                fontSize: "64px",
-                color: "var(--ion-color-danger)",
-                marginBottom: "16px",
-              }}
-            />
-            <h2>{error || "Project not found"}</h2>
-            <IonButton fill="outline" href="/tabs/projects">
-              Back to Projects
-            </IonButton>
+        <IonContent className="app-page-content">
+          <div className="app-page-stack">
+            <section className="app-card app-empty-state">
+              <div
+                className="app-empty-icon"
+                style={{
+                  background: "var(--app-error-soft)",
+                  color: "var(--ion-color-danger)",
+                }}
+              >
+                <IonIcon icon={codeOutline} />
+              </div>
+              <h2 className="app-section-title">
+                {error || "Project not found"}
+              </h2>
+              <p className="app-subtle-text">
+                The project could not be loaded right now.
+              </p>
+              <div
+                className="app-chip-row"
+                style={{ justifyContent: "center" }}
+              >
+                <IonButton fill="outline" href="/tabs/projects">
+                  Back to Projects
+                </IonButton>
+              </div>
+            </section>
           </div>
         </IonContent>
       </IonPage>
     );
   }
+
+  const statusMeta = getProjectStatusMeta(project.status);
 
   return (
     <IonPage>
@@ -182,115 +169,130 @@ export default function ProjectDetail() {
           <IonTitle>{project.name}</IonTitle>
         </IonToolbar>
       </IonHeader>
-      <IonContent>
+      <IonContent className="app-page-content">
         <IonRefresher slot="fixed" onIonRefresh={handleRefresh}>
           <IonRefresherContent />
         </IonRefresher>
 
-        {/* Status Card */}
-        <IonCard>
-          <IonCardContent>
-            <h2 style={{ marginBottom: "8px" }}>{project.name}</h2>
-            <p
-              style={{ color: "var(--ion-color-medium)", marginBottom: "16px" }}
-            >
-              {project.description || "No description provided."}
-            </p>
+        <div className="app-page-stack">
+          <section className="app-card app-hero-card">
+            <div className="app-eyebrow">Project overview</div>
             <div
               style={{
-                display: "inline-block",
-                padding: "4px 12px",
-                borderRadius: "16px",
-                backgroundColor: getStatusColor(project.status),
-                color: "white",
-                fontWeight: "600",
-                textTransform: "uppercase",
-                fontSize: "12px",
+                display: "flex",
+                justifyContent: "space-between",
+                gap: "12px",
+                alignItems: "flex-start",
+                flexWrap: "wrap",
               }}
             >
-              {project.status}
-            </div>
-          </IonCardContent>
-        </IonCard>
-
-        {/* Details */}
-        <IonCard>
-          <IonList>
-            <IonItem>
-              <IonIcon icon={calendarOutline} slot="start" color="medium" />
-              <IonLabel>
-                <h3>Created</h3>
-                <p>{formatDate(project.createdAt)}</p>
-              </IonLabel>
-            </IonItem>
-            <IonItem>
-              <IonIcon icon={timeOutline} slot="start" color="medium" />
-              <IonLabel>
-                <h3>Last Updated</h3>
-                <p>{formatDate(project.updatedAt)}</p>
-              </IonLabel>
-            </IonItem>
-            <IonItem>
-              <IonIcon icon={codeOutline} slot="start" color="medium" />
-              <IonLabel>
-                <h3>Project ID</h3>
-                <p style={{ fontFamily: "monospace", fontSize: "12px" }}>
-                  {project.id}
+              <div>
+                <h1 className="app-hero-title app-hero-title--compact">
+                  {project.name}
+                </h1>
+                <p className="app-hero-copy">
+                  {project.description || "No description provided yet."}
                 </p>
-              </IonLabel>
-            </IonItem>
-          </IonList>
-        </IonCard>
-
-        {/* Actions */}
-        <IonCard>
-          <IonList>
-            {project.deploymentUrl && (
-              <IonItem
-                button
-                href={project.deploymentUrl}
-                target="_blank"
-                rel="noopener noreferrer"
+              </div>
+              <span
+                className="app-status-pill"
+                style={{
+                  background: statusMeta.background,
+                  color: statusMeta.color,
+                }}
               >
-                <IonIcon icon={rocketOutline} slot="start" color="success" />
-                <IonLabel>
-                  <h3>Live Deployment</h3>
-                  <p>Open deployed application</p>
-                </IonLabel>
-                <IonIcon
-                  icon={checkmarkCircleOutline}
-                  slot="end"
-                  color="success"
-                />
-              </IonItem>
-            )}
-            {project.githubUrl && (
-              <IonItem
-                button
-                href={project.githubUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <IonIcon icon={codeOutline} slot="start" color="dark" />
-                <IonLabel>
-                  <h3>GitHub Repository</h3>
-                  <p>View source code</p>
-                </IonLabel>
-              </IonItem>
-            )}
-            <IonItem button routerLink="/tabs/settings">
-              <IonIcon icon={settingsOutline} slot="start" color="medium" />
-              <IonLabel>
-                <h3>App Settings</h3>
-                <p>Configure application settings</p>
-              </IonLabel>
-            </IonItem>
-          </IonList>
-        </IonCard>
+                {statusMeta.label}
+              </span>
+            </div>
+          </section>
 
-        {/* Danger Zone */}
-        <IonCard>
-          <IonCardContent>
+          <section className="app-card app-card-section">
+            <div className="app-metadata-list">
+              <div className="app-metadata-row">
+                <IonIcon icon={calendarOutline} color="medium" />
+                <div>
+                  <h3>Created</h3>
+                  <p>{formatDate(project.createdAt)}</p>
+                </div>
+              </div>
+              <div className="app-metadata-row">
+                <IonIcon icon={timeOutline} color="medium" />
+                <div>
+                  <h3>Last updated</h3>
+                  <p>{formatDate(project.updatedAt)}</p>
+                </div>
+              </div>
+              <div className="app-metadata-row">
+                <IonIcon icon={codeOutline} color="medium" />
+                <div>
+                  <h3>Project ID</h3>
+                  <p style={{ fontFamily: "monospace", fontSize: "0.78rem" }}>
+                    {project.id}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section className="app-card app-card-section">
+            <div style={{ marginBottom: "16px" }}>
+              <h2 className="app-section-title">Actions</h2>
+              <p className="app-subtle-text">
+                Open the live app, inspect the repository, or adjust app-level
+                settings from here.
+              </p>
+            </div>
+            <div className="app-action-list">
+              {project.deploymentUrl && (
+                <a
+                  className="app-action-link"
+                  href={project.deploymentUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <div>
+                    <h3 className="app-section-title">Live deployment</h3>
+                    <p className="app-subtle-text">Open deployed application</p>
+                  </div>
+                  <IonIcon icon={checkmarkCircleOutline} color="success" />
+                </a>
+              )}
+              {project.githubUrl && (
+                <a
+                  className="app-action-link"
+                  href={project.githubUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <div>
+                    <h3 className="app-section-title">GitHub repository</h3>
+                    <p className="app-subtle-text">View source code</p>
+                  </div>
+                  <IonIcon icon={openOutline} />
+                </a>
+              )}
+              <button
+                type="button"
+                className="app-action-link"
+                onClick={() => history.push("/tabs/settings")}
+              >
+                <div>
+                  <h3 className="app-section-title">App settings</h3>
+                  <p className="app-subtle-text">
+                    Manage preferences and linked accounts
+                  </p>
+                </div>
+                <IonIcon icon={settingsOutline} />
+              </button>
+            </div>
+            {!project.deploymentUrl && !project.githubUrl && (
+              <div className="app-inline-note">
+                This project has not been deployed or connected to GitHub yet.
+              </div>
+            )}
+          </section>
+
+          <section className="app-card app-card-section">
             <IonButton
               expand="block"
               fill="outline"
@@ -300,8 +302,8 @@ export default function ProjectDetail() {
               <IonIcon slot="start" icon={trashOutline} />
               Delete Project
             </IonButton>
-          </IonCardContent>
-        </IonCard>
+          </section>
+        </div>
 
         {/* Delete Confirmation Alert */}
         <IonAlert

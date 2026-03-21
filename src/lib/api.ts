@@ -94,14 +94,23 @@ export class ApiClient {
     return `${this.baseUrl}/auth/login/discord?platform=${platform}`;
   }
 
-  async login(credentials: { email: string; password: string }) {
+  async login(credentials: {
+    email: string;
+    password: string;
+    turnstileToken?: string;
+  }) {
     return this.request("/auth/login", {
       method: "POST",
       body: JSON.stringify(credentials),
     });
   }
 
-  register(data: unknown) {
+  register(data: {
+    name?: string;
+    email: string;
+    password: string;
+    turnstileToken?: string;
+  }) {
     return this.request("/auth/register", {
       method: "POST",
       body: JSON.stringify(data),
@@ -222,11 +231,17 @@ export class ApiClient {
     messages: AiMessage[],
   ): AsyncGenerator<string, void, unknown> {
     const url = `${this.baseUrl}/ai/chat`;
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+    };
+
+    if (this.accessToken) {
+      headers["Authorization"] = `Bearer ${this.accessToken}`;
+    }
+
     const response = await fetch(url, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers,
       body: JSON.stringify({ messages, stream: true }),
     });
 

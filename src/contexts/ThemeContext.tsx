@@ -88,10 +88,44 @@ export function ThemeProvider({
     root.style.setProperty("--ion-background-color", theme.colors.background);
     root.style.setProperty("--ion-card-background", theme.colors.card);
     root.style.setProperty("--ion-text-color", theme.colors.text);
+    root.style.setProperty("--ion-toolbar-background", theme.colors.background);
+    root.style.setProperty("--ion-toolbar-color", theme.colors.text);
+    root.style.setProperty("--ion-item-background", theme.colors.cardElevated);
+    root.style.setProperty("--ion-border-color", theme.colors.border);
     root.style.setProperty("--ion-color-primary", theme.colors.primary);
     root.style.setProperty("--ion-color-success", theme.colors.success);
     root.style.setProperty("--ion-color-warning", theme.colors.warning);
     root.style.setProperty("--ion-color-danger", theme.colors.error);
+    root.style.setProperty("--ion-tab-bar-background", theme.colors.tabBar);
+    root.style.setProperty(
+      "--ion-tab-bar-color-selected",
+      theme.colors.tabBarActive,
+    );
+    root.style.setProperty("--ion-tab-bar-color", theme.colors.tabBarText);
+    root.style.setProperty("--app-surface-color", theme.colors.card);
+    root.style.setProperty(
+      "--app-surface-elevated-color",
+      theme.colors.cardElevated,
+    );
+    root.style.setProperty("--app-card-muted-color", theme.colors.cardMuted);
+    root.style.setProperty("--app-input-background", theme.colors.input);
+    root.style.setProperty(
+      "--app-text-secondary-color",
+      theme.colors.textSecondary,
+    );
+    root.style.setProperty("--app-border-color", theme.colors.border);
+    root.style.setProperty("--app-primary-soft", theme.colors.primarySoft);
+    root.style.setProperty("--app-success-soft", theme.colors.successSoft);
+    root.style.setProperty("--app-warning-soft", theme.colors.warningSoft);
+    root.style.setProperty("--app-error-soft", theme.colors.errorSoft);
+    root.style.setProperty("--app-tab-bar-color", theme.colors.tabBar);
+    root.style.setProperty("--app-tab-bar-active", theme.colors.tabBarActive);
+    root.style.setProperty("--app-tab-bar-text-color", theme.colors.tabBarText);
+    root.style.setProperty("--app-shadow-color", theme.colors.shadow);
+    root.style.setProperty("--app-hero-start", theme.colors.heroStart);
+    root.style.setProperty("--app-hero-end", theme.colors.heroEnd);
+    document.body.style.backgroundColor = theme.colors.background;
+    document.body.style.color = theme.colors.text;
   }, [isDark, theme]);
 
   return (

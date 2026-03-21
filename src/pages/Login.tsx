@@ -13,26 +13,31 @@ import {
   IonCardTitle,
   IonContent,
   IonHeader,
-  IonImg,
   IonInput,
   IonItem,
   IonLabel,
-  IonList,
   IonPage,
   IonTitle,
   IonToolbar,
+  IonIcon,
   useIonViewWillEnter,
 } from "@ionic/react";
+import { TurnstileWidget } from "../components/ui/TurnstileWidget";
+import { logoDiscord, logoGithub } from "ionicons/icons";
 import { Redirect, useHistory } from "react-router-dom";
 import React, { useEffect, useState } from "react";
 import { useAuth } from "../contexts/AuthContext";
+
+const TURNSTILE_ENABLED = Boolean(import.meta.env.VITE_TURNSTILE_SITE_KEY);
 
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { login, user } = useAuth();
+  const [turnstileToken, setTurnstileToken] = useState<string | undefined>();
+  const [turnstileWidgetKey, setTurnstileWidgetKey] = useState(0);
+  const { login, loginWithGitHub, loginWithDiscord, user } = useAuth();
   const history = useHistory();
 
   console.log("Login: rendering, user authenticated:", !!user);
@@ -65,7 +70,7 @@ export default function Login() {
     setIsLoading(true);
     setError(null);
     try {
-      await login(email, password);
+      await login(email, password, turnstileToken);
       // Navigation is handled by AuthContext when user state updates
     } catch (err) {
       const message =
@@ -73,6 +78,8 @@ export default function Login() {
           ? err.message
           : "Login failed. Please check your credentials.";
       setError(message);
+      setTurnstileToken(undefined);
+      setTurnstileWidgetKey(currentKey => currentKey + 1);
     } finally {
       setIsLoading(false);
     }
@@ -82,52 +89,30 @@ export default function Login() {
     <IonPage>
       <IonHeader>
         <IonToolbar>
-          <IonImg
-            src="./favicon.png"
-            alt="MagicAppDev Logo"
-            style={{ width: "32px", height: "32px" }}
-          />
-          <IonTitle
-            style={{
-              fontSize: "16px",
-              fontWeight: "800",
-              marginLeft: "25px",
-              marginTop: "-24px",
-            }}
-          >
-            Sign In
-          </IonTitle>
+          <IonTitle>Sign In</IonTitle>
         </IonToolbar>
       </IonHeader>
-      <IonContent className="ion-padding">
-        <div
-          style={{
-            textAlign: "center",
-            marginTop: "40px",
-            marginBottom: "20px",
-          }}
-        >
-          <h1
-            style={{ fontSize: "32px", fontWeight: "800", marginBottom: "8px" }}
-          >
-            MagicAppDev
-          </h1>
-          <p style={{ color: "var(--ion-color-medium)" }}>
-            Build apps like magic
-          </p>
-        </div>
+      <IonContent fullscreen className="app-auth-content">
+        <div className="app-auth-shell">
+          <section className="app-auth-hero">
+            <div className="app-eyebrow">MagicAppDev</div>
+            <h1 className="app-hero-title">Welcome back</h1>
+            <p className="app-hero-copy">
+              Sign in to continue building, reviewing projects, and shipping
+              updates from one workspace.
+            </p>
+          </section>
 
-        <IonCard>
-          <IonCardHeader>
-            <IonCardTitle>Sign In</IonCardTitle>
-            <IonCardSubtitle>
-              Enter your credentials to continue
-            </IonCardSubtitle>
-          </IonCardHeader>
-          <IonCardContent>
-            <form onSubmit={handleEmailLogin}>
-              <IonList>
-                <IonItem>
+          <IonCard className="app-card app-auth-card">
+            <IonCardHeader>
+              <IonCardTitle>Sign In</IonCardTitle>
+              <IonCardSubtitle>
+                Enter your credentials to continue
+              </IonCardSubtitle>
+            </IonCardHeader>
+            <IonCardContent>
+              <form onSubmit={handleEmailLogin} className="app-form-stack">
+                <IonItem lines="none" className="app-form-item">
                   <IonLabel position="stacked">Email</IonLabel>
                   <IonInput
                     type="email"
@@ -136,7 +121,7 @@ export default function Login() {
                     required
                   />
                 </IonItem>
-                <IonItem>
+                <IonItem lines="none" className="app-form-item">
                   <IonLabel position="stacked">Password</IonLabel>
                   <IonInput
                     type="password"
@@ -145,34 +130,59 @@ export default function Login() {
                     required
                   />
                 </IonItem>
-              </IonList>
-              {error && (
-                <div
-                  style={{
-                    color: "var(--ion-color-danger)",
-                    marginTop: "12px",
-                    textAlign: "center",
-                    fontSize: "14px",
-                  }}
+                {TURNSTILE_ENABLED && (
+                  <TurnstileWidget
+                    key={turnstileWidgetKey}
+                    onSuccess={token => setTurnstileToken(token)}
+                    onError={() => {
+                      setTurnstileToken(undefined);
+                      setTurnstileWidgetKey(currentKey => currentKey + 1);
+                    }}
+                    onExpire={() => {
+                      setTurnstileToken(undefined);
+                      setTurnstileWidgetKey(currentKey => currentKey + 1);
+                    }}
+                  />
+                )}
+                {error && <div className="app-error-banner">{error}</div>}
+                <IonButton
+                  expand="block"
+                  type="submit"
+                  disabled={
+                    isLoading ||
+                    !email.trim() ||
+                    !password ||
+                    (TURNSTILE_ENABLED && !turnstileToken)
+                  }
                 >
-                  {error}
-                </div>
-              )}
-              <div style={{ marginTop: "16px" }}>
-                <IonButton expand="block" type="submit" disabled={isLoading}>
                   {isLoading ? "Signing In..." : "Sign In"}
                 </IonButton>
-              </div>
-            </form>
-          </IonCardContent>
-        </IonCard>
-
-        {/* OAuth login disabled for now as requested */}
-
-        <div style={{ textAlign: "center", marginTop: "20px" }}>
-          <p>
-            Don't have an account? <a href="/register">Sign Up</a>
-          </p>
+                <IonButton
+                  expand="block"
+                  fill="outline"
+                  type="button"
+                  onClick={() => void loginWithGitHub()}
+                  disabled={isLoading}
+                >
+                  <IonIcon slot="start" icon={logoGithub} />
+                  Continue with GitHub
+                </IonButton>
+                <IonButton
+                  expand="block"
+                  fill="outline"
+                  type="button"
+                  onClick={() => void loginWithDiscord()}
+                  disabled={isLoading}
+                >
+                  <IonIcon slot="start" icon={logoDiscord} />
+                  Continue with Discord
+                </IonButton>
+              </form>
+            </IonCardContent>
+          </IonCard>
+          <div className="app-link-copy">
+            Don&apos;t have an account? <a href="/register">Sign Up</a>
+          </div>
         </div>
       </IonContent>
     </IonPage>
