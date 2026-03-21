@@ -53,7 +53,8 @@ jobs:
 
       - name: Autobuild mobile app
         uses: github/codeql-action/autobuild@v3
-        working-directory: apps/mobile
+        with:
+          working-directory: apps/mobile
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v3
