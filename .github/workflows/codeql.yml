@@ -4,12 +4,9 @@ on:
   push:
     branches: [main]
     paths:
-      - "apps/mobile/**"
       - ".github/workflows/mobile-codeql.yml"
   pull_request:
     branches: [main]
-    paths:
-      - "apps/mobile/**"
   schedule:
     - cron: "30 2 * * 0" # Weekly on Sunday at 2:00 AM UTC
 
@@ -42,7 +39,7 @@ jobs:
 
       - name: Install mobile dependencies
         working-directory: apps/mobile
-        run: pnpm install --no-frozen-lockfile
+        run: npm install
 
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v3
@@ -53,8 +50,6 @@ jobs:
 
       - name: Autobuild mobile app
         uses: github/codeql-action/autobuild@v3
-        with:
-          working-directory: apps/mobile
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v3
