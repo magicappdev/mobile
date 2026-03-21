@@ -9,22 +9,24 @@
   --app-radius-sm: 14px;
   --app-radius-md: 20px;
   --app-radius-lg: 28px;
+  --app-page-gradient: linear-gradient(
+    180deg,
+    var(--app-hero-start, var(--ion-background-color)) 0%,
+    var(--ion-background-color) var(--app-page-gradient-end)
+  );
+  --app-border-subtle-color: rgba(148, 163, 184, 0.16);
+  --app-shadow-elevated: rgba(15, 23, 42, 0.18);
+  --app-text-secondary-default: #64748b;
 }
 
 ion-content.app-page-content {
-  --background: linear-gradient(
-    180deg,
-    var(--app-hero-start, var(--ion-background-color)) 0%,
-    var(--ion-background-color) 240px
-  );
+  --app-page-gradient-end: 240px;
+  --background: var(--app-page-gradient);
 }
 
 ion-content.app-auth-content {
-  --background: linear-gradient(
-    180deg,
-    var(--app-hero-start, var(--ion-background-color)) 0%,
-    var(--ion-background-color) 320px
-  );
+  --app-page-gradient-end: 320px;
+  --background: var(--app-page-gradient);
 }
 
 .app-page-stack {
@@ -40,9 +42,9 @@ ion-content.app-auth-content {
 
 .app-card {
   background: var(--app-surface-elevated-color, var(--ion-card-background));
-  border: 1px solid var(--app-border-color, rgba(148, 163, 184, 0.16));
+  border: 1px solid var(--app-border-color, var(--app-border-subtle-color));
   border-radius: var(--app-radius-lg);
-  box-shadow: 0 18px 40px -24px var(--app-shadow-color, rgba(15, 23, 42, 0.18));
+  box-shadow: 0 18px 40px -24px var(--app-shadow-color, var(--app-shadow-elevated));
 }
 
 .app-card--muted {
@@ -86,7 +88,7 @@ ion-content.app-auth-content {
 .app-subtle-text {
   margin: 0;
   line-height: 1.55;
-  color: var(--app-text-secondary-color, #64748b);
+  color: var(--app-text-secondary-color, var(--app-text-secondary-default));
 }
 
 .app-chip-row {
