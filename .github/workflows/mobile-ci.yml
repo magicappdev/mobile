@@ -7,14 +7,14 @@ on:
   workflow_dispatch:
   push:
     tags:
-      - "v*"
+      - 'v*'
 
 permissions:
   contents: read
 
 env:
   NODE_VERSION: 22
-  JAVA_VERSION: "21"
+  JAVA_VERSION: '21'
 
 jobs:
   lint-and-typecheck:
@@ -57,7 +57,7 @@ jobs:
       - name: Setup Java JDK
         uses: actions/setup-java@6a0805fcefea3d4657a47ac4c165951e33482018 # v4.2.2
         with:
-          distribution: "temurin"
+          distribution: 'temurin'
           java-version: ${{ env.JAVA_VERSION }}
 
       - name: Install dependencies
@@ -91,7 +91,7 @@ jobs:
         env:
           GRADLE_OPTS: -Dorg.gradle.jvmargs="-Xmx4g -XX:MaxMetaspaceSize=1024m -XX:+HeapDumpOnOutOfMemoryError"
           ORG_GRADLE_PROJECT_jvmArgs: -Xmx4g -XX:MaxMetaspaceSize=1024m
-          NODE_OPTIONS: "--max-old-space-size=4096"
+          NODE_OPTIONS: '--max-old-space-size=4096'
 
       - name: Release to GitHub
         uses: softprops/action-gh-release@v2

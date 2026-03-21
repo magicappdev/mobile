@@ -108,8 +108,8 @@ Global state is managed through React Context:
 **Usage Pattern**:
 
 ```typescript
-const { user, isLoading } = useAuth();
-const { theme, setTheme } = useTheme();
+const {user, isLoading} = useAuth()
+const {theme, setTheme} = useTheme()
 ```
 
 #### 3. Tab-Based Navigation
@@ -227,19 +227,19 @@ The project uses TypeScript strict mode. Follow these rules:
 
    ```typescript
    // Good
-   const count = 0;
-   const name = "user";
+   const count = 0
+   const name = 'user'
 
    // Avoid
-   const count: number = 0;
+   const count: number = 0
    ```
 
 2. **Explicit Types for Public APIs**: Define types for exports
 
    ```typescript
    export interface User {
-     id: string;
-     name: string;
+   	id: string
+   	name: string
    }
    ```
 
@@ -248,21 +248,21 @@ The project uses TypeScript strict mode. Follow these rules:
    ```typescript
    // Good
    function processData(data: unknown) {
-     if (typeof data === "string") {
-       return data.toUpperCase();
-     }
+   	if (typeof data === 'string') {
+   		return data.toUpperCase()
+   	}
    }
 
    // Avoid
    function processData(data: any) {
-     return data.toUpperCase();
+   	return data.toUpperCase()
    }
    ```
 
 4. **Type Imports**: Import types using `import type`
 
    ```typescript
-   import type { User } from "./types";
+   import type {User} from './types'
    ```
 
 #### Component Typing
@@ -291,13 +291,13 @@ Use proper event types:
 
 ```typescript
 const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-  setValue(event.target.value);
-};
+	setValue(event.target.value)
+}
 
 const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
-  event.preventDefault();
-  // Submit logic
-};
+	event.preventDefault()
+	// Submit logic
+}
 ```
 
 ### React Patterns
@@ -327,22 +327,22 @@ Extract reusable logic into custom hooks:
 ```typescript
 // hooks/useLocalStorage.ts
 export const useLocalStorage = <T>(key: string, initialValue: T) => {
-  const [value, setValue] = useState<T>(initialValue);
+	const [value, setValue] = useState<T>(initialValue)
 
-  useEffect(() => {
-    const stored = localStorage.getItem(key);
-    if (stored) {
-      setValue(JSON.parse(stored));
-    }
-  }, [key]);
+	useEffect(() => {
+		const stored = localStorage.getItem(key)
+		if (stored) {
+			setValue(JSON.parse(stored))
+		}
+	}, [key])
 
-  const setStoredValue = (newValue: T) => {
-    setValue(newValue);
-    localStorage.setItem(key, JSON.stringify(newValue));
-  };
+	const setStoredValue = (newValue: T) => {
+		setValue(newValue)
+		localStorage.setItem(key, JSON.stringify(newValue))
+	}
 
-  return [value, setStoredValue] as const;
-};
+	return [value, setStoredValue] as const
+}
 ```
 
 #### Ref Forwarding
@@ -368,13 +368,13 @@ Always include all dependencies in useEffect:
 ```typescript
 // Good
 useEffect(() => {
-  fetchData(userId, token);
-}, [userId, token]);
+	fetchData(userId, token)
+}, [userId, token])
 
 // Bad - Missing dependencies
 useEffect(() => {
-  fetchData(userId, token);
-}, []); // Missing userId and token
+	fetchData(userId, token)
+}, []) // Missing userId and token
 ```
 
 ### Ionic Component Usage
@@ -385,14 +385,14 @@ Import Ionic components from `@ionic/react`:
 
 ```typescript
 import {
-  IonButton,
-  IonCard,
-  IonContent,
-  IonHeader,
-  IonPage,
-  IonTitle,
-  IonToolbar,
-} from "@ionic/react";
+	IonButton,
+	IonCard,
+	IonContent,
+	IonHeader,
+	IonPage,
+	IonTitle,
+	IonToolbar,
+} from '@ionic/react'
 ```
 
 #### Page Structure
@@ -457,9 +457,9 @@ Use Ionic CSS variables for theming:
 
 ```css
 :root {
-  --ion-color-primary: #3880ff;
-  --ion-color-primary-rgb: 56, 128, 255;
-  --ion-color-primary-contrast: #ffffff;
+	--ion-color-primary: #3880ff;
+	--ion-color-primary-rgb: 56, 128, 255;
+	--ion-color-primary-contrast: #ffffff;
 }
 ```
 
@@ -483,11 +483,11 @@ Use Ionic's grid system and responsive utilities:
 
 ```html
 <IonGrid>
-  <IonRow>
-    <IonCol size="12" sizeMd="6" sizeLg="4">
-      <IonCard>Content</IonCard>
-    </IonCol>
-  </IonRow>
+	<IonRow>
+		<IonCol size="12" sizeMd="6" sizeLg="4">
+			<IonCard>Content</IonCard>
+		</IonCol>
+	</IonRow>
 </IonGrid>
 ```
 
@@ -511,13 +511,13 @@ Organize imports in this order:
 4. Styles
 
 ```typescript
-import type { User } from "@magicappdev/shared";
-import { IonButton } from "@ionic/react";
-import React from "react";
+import type {User} from '@magicappdev/shared'
+import {IonButton} from '@ionic/react'
+import React from 'react'
 
-import { useAuth } from "../contexts/AuthContext";
+import {useAuth} from '../contexts/AuthContext'
 
-import "./HomePage.css";
+import './HomePage.css'
 ```
 
 #### Component Organization
@@ -557,16 +557,16 @@ export const Button: React.FC<ButtonProps> = ({ label, onClick }) => {
 Use `@capacitor/preferences` for persistent storage:
 
 ```typescript
-import { Preferences } from "@capacitor/preferences";
+import {Preferences} from '@capacitor/preferences'
 
 export const setPreference = async (key: string, value: string) => {
-  await Preferences.set({ key, value });
-};
+	await Preferences.set({key, value})
+}
 
 export const getPreference = async (key: string) => {
-  const { value } = await Preferences.get({ key });
-  return value;
-};
+	const {value} = await Preferences.get({key})
+	return value
+}
 ```
 
 #### Browser Plugin
@@ -574,11 +574,11 @@ export const getPreference = async (key: string) => {
 Use `@capacitor/browser` for in-app browsing:
 
 ```typescript
-import { Browser } from "@capacitor/browser";
+import {Browser} from '@capacitor/browser'
 
 export const openUrl = async (url: string) => {
-  await Browser.open({ url });
-};
+	await Browser.open({url})
+}
 ```
 
 #### Keyboard Plugin
@@ -586,13 +586,13 @@ export const openUrl = async (url: string) => {
 Use `@capacitor/keyboard` for keyboard management:
 
 ```typescript
-import { Keyboard } from "@capacitor/keyboard";
+import {Keyboard} from '@capacitor/keyboard'
 
 // Show keyboard
-await Keyboard.show();
+await Keyboard.show()
 
 // Hide keyboard
-await Keyboard.hide();
+await Keyboard.hide()
 ```
 
 ### Native Platform Detection
@@ -600,12 +600,12 @@ await Keyboard.hide();
 Detect the platform using Capacitor:
 
 ```typescript
-import { Capacitor } from "@capacitor/core";
+import {Capacitor} from '@capacitor/core'
 
-const isNative = Capacitor.isNativePlatform();
-const isAndroid = Capacitor.getPlatform() === "android";
-const isIOS = Capacitor.getPlatform() === "ios";
-const isWeb = Capacitor.getPlatform() === "web";
+const isNative = Capacitor.isNativePlatform()
+const isAndroid = Capacitor.getPlatform() === 'android'
+const isIOS = Capacitor.getPlatform() === 'ios'
+const isWeb = Capacitor.getPlatform() === 'web'
 ```
 
 ### Platform-Specific Code
@@ -613,17 +613,17 @@ const isWeb = Capacitor.getPlatform() === "web";
 Handle platform differences:
 
 ```typescript
-import { Capacitor } from "@capacitor/core";
+import {Capacitor} from '@capacitor/core'
 
 const handlePlatformAction = async () => {
-  if (Capacitor.isNativePlatform()) {
-    // Native-specific code
-    await NativePlugin.doSomething();
-  } else {
-    // Web fallback
-    window.open(url, "_blank");
-  }
-};
+	if (Capacitor.isNativePlatform()) {
+		// Native-specific code
+		await NativePlugin.doSomething()
+	} else {
+		// Web fallback
+		window.open(url, '_blank')
+	}
+}
 ```
 
 ## Authentication Flow
@@ -644,19 +644,19 @@ The application uses GitHub OAuth with JWT session management:
 #### Token Storage
 
 ```typescript
-import { Preferences } from "@capacitor/preferences";
+import {Preferences} from '@capacitor/preferences'
 
-const TOKEN_KEY = "auth_token";
-const REFRESH_TOKEN_KEY = "refresh_token";
+const TOKEN_KEY = 'auth_token'
+const REFRESH_TOKEN_KEY = 'refresh_token'
 
 export const setAuthToken = async (token: string) => {
-  await Preferences.set({ key: TOKEN_KEY, value: token });
-};
+	await Preferences.set({key: TOKEN_KEY, value: token})
+}
 
 export const getAuthToken = async () => {
-  const { value } = await Preferences.get({ key: TOKEN_KEY });
-  return value;
-};
+	const {value} = await Preferences.get({key: TOKEN_KEY})
+	return value
+}
 ```
 
 #### Token Refreshing
@@ -664,15 +664,15 @@ export const getAuthToken = async () => {
 Implement automatic token refresh:
 
 ```typescript
-import { ApiClient } from "@magicappdev/shared";
+import {ApiClient} from '@magicappdev/shared'
 
-const api = new ApiClient();
+const api = new ApiClient()
 
 api.setTokenRefreshCallback(async () => {
-  const newToken = await refreshToken();
-  await setAuthToken(newToken);
-  return newToken;
-});
+	const newToken = await refreshToken()
+	await setAuthToken(newToken)
+	return newToken
+})
 ```
 
 ### Protected Routes
@@ -705,11 +705,11 @@ const ProtectedRoute: React.FC<{ path: string; component: React.FC }> = ({
 The application uses the shared `ApiClient` from `@magicappdev/shared`:
 
 ```typescript
-import { ApiClient } from "@magicappdev/shared";
+import {ApiClient} from '@magicappdev/shared'
 
 const api = new ApiClient({
-  baseURL: process.env.REACT_APP_API_URL || "https://api.magicappdev.com",
-});
+	baseURL: process.env.REACT_APP_API_URL || 'https://api.magicappdev.com',
+})
 ```
 
 ### API Calls
@@ -718,9 +718,9 @@ const api = new ApiClient({
 
 ```typescript
 const fetchProjects = async () => {
-  const response = await api.get("/projects");
-  return response.data;
-};
+	const response = await api.get('/projects')
+	return response.data
+}
 ```
 
 #### Streaming Responses
@@ -729,12 +729,12 @@ Use streaming for AI chat responses:
 
 ```typescript
 const streamChatResponse = async (message: string) => {
-  const stream = await api.stream("/chat", { message });
+	const stream = await api.stream('/chat', {message})
 
-  for await (const chunk of stream) {
-    // Process streaming chunk
-  }
-};
+	for await (const chunk of stream) {
+		// Process streaming chunk
+	}
+}
 ```
 
 #### Error Handling
@@ -743,21 +743,21 @@ Always handle API errors properly:
 
 ```typescript
 const fetchData = async () => {
-  try {
-    const response = await api.get("/endpoint");
-    return response.data;
-  } catch (error) {
-    if (error instanceof ApiError) {
-      // Handle API error
-      console.error("API Error:", error.message);
-      showToast(error.message);
-    } else {
-      // Handle unexpected error
-      console.error("Unexpected error:", error);
-      showToast("An unexpected error occurred");
-    }
-  }
-};
+	try {
+		const response = await api.get('/endpoint')
+		return response.data
+	} catch (error) {
+		if (error instanceof ApiError) {
+			// Handle API error
+			console.error('API Error:', error.message)
+			showToast(error.message)
+		} else {
+			// Handle unexpected error
+			console.error('Unexpected error:', error)
+			showToast('An unexpected error occurred')
+		}
+	}
+}
 ```
 
 ## Theme System
@@ -805,7 +805,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({
 Ionic's system-based dark mode is enabled in [`App.tsx`](src/App.tsx:41):
 
 ```typescript
-import "@ionic/react/css/palettes/dark.system.css";
+import '@ionic/react/css/palettes/dark.system.css'
 ```
 
 #### Custom Theme Variables
@@ -814,15 +814,15 @@ Define theme variables in [`src/theme/variables.css`](src/theme/variables.css):
 
 ```css
 :root {
-  --ion-color-primary: #3880ff;
-  --ion-color-primary-rgb: 56, 128, 255;
-  --ion-color-primary-contrast: #ffffff;
+	--ion-color-primary: #3880ff;
+	--ion-color-primary-rgb: 56, 128, 255;
+	--ion-color-primary-contrast: #ffffff;
 }
 
 @media (prefers-color-scheme: dark) {
-  :root {
-    --ion-color-primary: #5dc9ff;
-  }
+	:root {
+		--ion-color-primary: #5dc9ff;
+	}
 }
 ```
 
@@ -889,14 +889,14 @@ Update [`capacitor.config.ts`](capacitor.config.ts) for production:
 
 ```typescript
 const config: CapacitorConfig = {
-  appId: "com.magicappdev",
-  appName: "MagicAppDev",
-  webDir: "dist",
-  server: {
-    // Remove URL for production to use local assets
-    cleartext: false, // Disable for production
-  },
-};
+	appId: 'com.magicappdev',
+	appName: 'MagicAppDev',
+	webDir: 'dist',
+	server: {
+		// Remove URL for production to use local assets
+		cleartext: false, // Disable for production
+	},
+}
 ```
 
 ### Android Deployment
@@ -975,7 +975,7 @@ Follow semantic versioning in [`package.json`](package.json:3):
 
 ```json
 {
-  "version": "0.0.1"
+	"version": "0.0.1"
 }
 ```
 
@@ -1044,13 +1044,13 @@ const ProjectsPage = React.lazy(() => import("./pages/Projects"));
 Store sensitive data securely:
 
 ```typescript
-import { Preferences } from "@capacitor/preferences";
+import {Preferences} from '@capacitor/preferences'
 
 // Good - Encrypted storage (platform-dependent)
-await Preferences.set({ key: "token", value: token });
+await Preferences.set({key: 'token', value: token})
 
 // Bad - LocalStorage (not secure)
-localStorage.setItem("token", token);
+localStorage.setItem('token', token)
 ```
 
 #### Authentication Tokens
@@ -1069,10 +1069,10 @@ Enforce HTTPS in production:
 ```typescript
 // capacitor.config.ts
 const config: CapacitorConfig = {
-  server: {
-    cleartext: false, // Disable HTTP in production
-  },
-};
+	server: {
+		cleartext: false, // Disable HTTP in production
+	},
+}
 ```
 
 #### Certificate Pinning
@@ -1086,16 +1086,16 @@ Implement certificate pinning for API calls (requires native plugin)
 Always validate user inputs:
 
 ```typescript
-import { z } from "zod";
+import {z} from 'zod'
 
 const loginSchema = z.object({
-  email: z.string().email(),
-  password: z.string().min(8),
-});
+	email: z.string().email(),
+	password: z.string().min(8),
+})
 
 const validateLogin = (data: unknown) => {
-  return loginSchema.parse(data);
-};
+	return loginSchema.parse(data)
+}
 ```
 
 #### API Responses
@@ -1104,14 +1104,14 @@ Validate API responses:
 
 ```typescript
 const userSchema = z.object({
-  id: z.string(),
-  email: z.string().email(),
-  name: z.string(),
-});
+	id: z.string(),
+	email: z.string().email(),
+	name: z.string(),
+})
 
 const validateUser = (data: unknown) => {
-  return userSchema.parse(data);
-};
+	return userSchema.parse(data)
+}
 ```
 
 ## Testing Guidelines
@@ -1140,14 +1140,14 @@ describe("UserProfile", () => {
 Mock external dependencies:
 
 ```typescript
-import { Preferences } from "@capacitor/preferences";
+import {Preferences} from '@capacitor/preferences'
 
-vi.mock("@capacitor/preferences", () => ({
-  Preferences: {
-    get: vi.fn(),
-    set: vi.fn(),
-  },
-}));
+vi.mock('@capacitor/preferences', () => ({
+	Preferences: {
+		get: vi.fn(),
+		set: vi.fn(),
+	},
+}))
 ```
 
 ### E2E Testing
@@ -1166,14 +1166,14 @@ Test critical user journeys:
 Configure Cypress in [`cypress.config.ts`](cypress.config.ts):
 
 ```typescript
-import { defineConfig } from "cypress";
+import {defineConfig} from 'cypress'
 
 export default defineConfig({
-  e2e: {
-    baseUrl: "http://localhost:5173",
-    supportFile: false,
-  },
-});
+	e2e: {
+		baseUrl: 'http://localhost:5173',
+		supportFile: false,
+	},
+})
 ```
 
 ## Troubleshooting

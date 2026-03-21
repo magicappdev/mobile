@@ -1,4 +1,4 @@
-import { createBrowserHistory } from "history";
+import {createBrowserHistory} from 'history'
 
 // Create a custom history instance that can be used throughout the app
-export const appHistory = createBrowserHistory();
+export const appHistory = createBrowserHistory()

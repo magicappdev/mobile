@@ -1,7 +1,7 @@
 {
-  "name": "Magic App Dev",
-  "integrations": {
-    "capacitor": {}
-  },
-  "type": "react-vite"
+	"name": "Magic App Dev",
+	"integrations": {
+		"capacitor": {}
+	},
+	"type": "react-vite"
 }

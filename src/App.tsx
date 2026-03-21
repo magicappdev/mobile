@@ -1,36 +1,36 @@
 import {
-  IonApp,
-  IonIcon,
-  IonLabel,
-  IonRouterOutlet,
-  IonSpinner,
-  IonTabBar,
-  IonTabButton,
-  IonTabs,
-  setupIonicReact,
-} from "@ionic/react";
-import { chatbubbleEllipses, folder, home, settings } from "ionicons/icons";
-import { IonReactRouter } from "@ionic/react-router";
-import { Redirect, Route } from "react-router-dom";
-import React from "react";
+	IonApp,
+	IonIcon,
+	IonLabel,
+	IonRouterOutlet,
+	IonSpinner,
+	IonTabBar,
+	IonTabButton,
+	IonTabs,
+	setupIonicReact,
+} from '@ionic/react'
+import {chatbubbleEllipses, folder, home, settings} from 'ionicons/icons'
+import {IonReactRouter} from '@ionic/react-router'
+import {Redirect, Route} from 'react-router-dom'
+import React from 'react'
 
-import { appHistory } from "./lib/history";
+import {appHistory} from './lib/history'
 
 /* Core CSS required for Ionic components to work properly */
-import "@ionic/react/css/core.css";
+import '@ionic/react/css/core.css'
 
 /* Basic CSS for apps built with Ionic */
-import "@ionic/react/css/typography.css";
-import "@ionic/react/css/structure.css";
-import "@ionic/react/css/normalize.css";
+import '@ionic/react/css/typography.css'
+import '@ionic/react/css/structure.css'
+import '@ionic/react/css/normalize.css'
 
 /* Optional CSS utils that can be commented out */
-import "@ionic/react/css/text-transformation.css";
-import "@ionic/react/css/text-alignment.css";
-import "@ionic/react/css/float-elements.css";
-import "@ionic/react/css/flex-utils.css";
-import "@ionic/react/css/padding.css";
-import "@ionic/react/css/display.css";
+import '@ionic/react/css/text-transformation.css'
+import '@ionic/react/css/text-alignment.css'
+import '@ionic/react/css/float-elements.css'
+import '@ionic/react/css/flex-utils.css'
+import '@ionic/react/css/padding.css'
+import '@ionic/react/css/display.css'
 
 /**
  * Ionic Dark Mode
@@ -41,155 +41,155 @@ import "@ionic/react/css/display.css";
 
 /* import '@ionic/react/css/palettes/dark.always.css'; */
 /* import '@ionic/react/css/palettes/dark.class.css'; */
-import "@ionic/react/css/palettes/dark.system.css";
+import '@ionic/react/css/palettes/dark.system.css'
 
 /* Theme variables */
-import "./theme/variables.css";
-import "./theme/app.css";
+import './theme/variables.css'
+import './theme/app.css'
 
 /* Context Providers */
-import { NavigationProvider } from "./contexts/NavigationContext";
-import { AuthProvider, useAuth } from "./contexts/AuthContext";
-import { ThemeProvider } from "./contexts/ThemeContext";
+import {NavigationProvider} from './contexts/NavigationContext'
+import {AuthProvider, useAuth} from './contexts/AuthContext'
+import {ThemeProvider} from './contexts/ThemeContext'
 
 /* Pages */
-import ProjectDetail from "./pages/ProjectDetail";
-import Settings from "./pages/Settings";
-import Register from "./pages/Register";
-import Projects from "./pages/Projects";
-import Login from "./pages/Login";
-import Home from "./pages/Home";
-import Chat from "./pages/Chat";
+import ProjectDetail from './pages/ProjectDetail'
+import Settings from './pages/Settings'
+import Register from './pages/Register'
+import Projects from './pages/Projects'
+import Login from './pages/Login'
+import Home from './pages/Home'
+import Chat from './pages/Chat'
 
 /* Admin Pages */
-import AdminChangePassword from "./pages/admin/ChangePassword";
-import AdminDashboard from "./pages/admin/Dashboard";
-import AdminApiKeys from "./pages/admin/ApiKeys";
-import AdminConfig from "./pages/admin/Config";
-import AdminUsers from "./pages/admin/Users";
-import AdminLogs from "./pages/admin/Logs";
+import AdminChangePassword from './pages/admin/ChangePassword'
+import AdminDashboard from './pages/admin/Dashboard'
+import AdminApiKeys from './pages/admin/ApiKeys'
+import AdminConfig from './pages/admin/Config'
+import AdminUsers from './pages/admin/Users'
+import AdminLogs from './pages/admin/Logs'
 
-setupIonicReact();
+setupIonicReact()
 
 /**
  * Tabs Component
  * Separated to ensure clean routing within the tab system
  */
 const Tabs: React.FC = () => {
-  return (
-    <IonTabs>
-      <IonRouterOutlet>
-        <Route exact path="/tabs/home" component={Home} />
-        <Route exact path="/tabs/chat" component={Chat} />
-        <Route exact path="/tabs/projects" component={Projects} />
-        <Route exact path="/tabs/projects/:id" component={ProjectDetail} />
-        <Route exact path="/tabs/settings" component={Settings} />
-        <Route exact path="/tabs" render={() => <Redirect to="/tabs/home" />} />
-      </IonRouterOutlet>
+	return (
+		<IonTabs>
+			<IonRouterOutlet>
+				<Route exact path="/tabs/home" component={Home} />
+				<Route exact path="/tabs/chat" component={Chat} />
+				<Route exact path="/tabs/projects" component={Projects} />
+				<Route exact path="/tabs/projects/:id" component={ProjectDetail} />
+				<Route exact path="/tabs/settings" component={Settings} />
+				<Route exact path="/tabs" render={() => <Redirect to="/tabs/home" />} />
+			</IonRouterOutlet>
 
-      <IonTabBar slot="bottom" className="app-tab-bar">
-        <IonTabButton tab="home" href="/tabs/home">
-          <IonIcon aria-hidden="true" icon={home} />
-          <IonLabel>Home</IonLabel>
-        </IonTabButton>
-        <IonTabButton tab="chat" href="/tabs/chat">
-          <IonIcon aria-hidden="true" icon={chatbubbleEllipses} />
-          <IonLabel>Chat</IonLabel>
-        </IonTabButton>
-        <IonTabButton tab="projects" href="/tabs/projects">
-          <IonIcon aria-hidden="true" icon={folder} />
-          <IonLabel>Projects</IonLabel>
-        </IonTabButton>
-        <IonTabButton tab="settings" href="/tabs/settings">
-          <IonIcon aria-hidden="true" icon={settings} />
-          <IonLabel>Settings</IonLabel>
-        </IonTabButton>
-      </IonTabBar>
-    </IonTabs>
-  );
-};
+			<IonTabBar slot="bottom" className="app-tab-bar">
+				<IonTabButton tab="home" href="/tabs/home">
+					<IonIcon aria-hidden="true" icon={home} />
+					<IonLabel>Home</IonLabel>
+				</IonTabButton>
+				<IonTabButton tab="chat" href="/tabs/chat">
+					<IonIcon aria-hidden="true" icon={chatbubbleEllipses} />
+					<IonLabel>Chat</IonLabel>
+				</IonTabButton>
+				<IonTabButton tab="projects" href="/tabs/projects">
+					<IonIcon aria-hidden="true" icon={folder} />
+					<IonLabel>Projects</IonLabel>
+				</IonTabButton>
+				<IonTabButton tab="settings" href="/tabs/settings">
+					<IonIcon aria-hidden="true" icon={settings} />
+					<IonLabel>Settings</IonLabel>
+				</IonTabButton>
+			</IonTabBar>
+		</IonTabs>
+	)
+}
 
 /**
  * App Routes Component
  * Handles routing based on authentication state
  */
 const AppRoutes: React.FC = () => {
-  const { user, isLoading } = useAuth();
+	const {user, isLoading} = useAuth()
 
-  console.log(
-    `[ROUTER] Render - user: ${!!user}, isLoading: ${isLoading}, path: ${window.location.pathname}`,
-  );
+	console.log(
+		`[ROUTER] Render - user: ${!!user}, isLoading: ${isLoading}, path: ${window.location.pathname}`,
+	)
 
-  return (
-    <>
-      <IonRouterOutlet>
-        {/* Auth Routes */}
-        <Route exact path="/login">
-          {!user ? <Login /> : <Redirect to="/tabs/home" />}
-        </Route>
-        <Route exact path="/register">
-          {!user ? <Register /> : <Redirect to="/tabs/home" />}
-        </Route>
+	return (
+		<>
+			<IonRouterOutlet>
+				{/* Auth Routes */}
+				<Route exact path="/login">
+					{!user ? <Login /> : <Redirect to="/tabs/home" />}
+				</Route>
+				<Route exact path="/register">
+					{!user ? <Register /> : <Redirect to="/tabs/home" />}
+				</Route>
 
-        {/* Main Tab Routes */}
-        <Route path="/tabs">{user ? <Tabs /> : <Redirect to="/login" />}</Route>
+				{/* Main Tab Routes */}
+				<Route path="/tabs">{user ? <Tabs /> : <Redirect to="/login" />}</Route>
 
-        {/* Admin Routes */}
-        <Route path="/admin">
-          {user ? (
-            <IonRouterOutlet>
-              <Route exact path="/admin/dashboard" component={AdminDashboard} />
-              <Route exact path="/admin/users" component={AdminUsers} />
-              <Route exact path="/admin/logs" component={AdminLogs} />
-              <Route exact path="/admin/api-keys" component={AdminApiKeys} />
-              <Route exact path="/admin/config" component={AdminConfig} />
-              <Route
-                exact
-                path="/admin/change-password"
-                component={AdminChangePassword}
-              />
-            </IonRouterOutlet>
-          ) : (
-            <Redirect to="/login" />
-          )}
-        </Route>
+				{/* Admin Routes */}
+				<Route path="/admin">
+					{user ? (
+						<IonRouterOutlet>
+							<Route exact path="/admin/dashboard" component={AdminDashboard} />
+							<Route exact path="/admin/users" component={AdminUsers} />
+							<Route exact path="/admin/logs" component={AdminLogs} />
+							<Route exact path="/admin/api-keys" component={AdminApiKeys} />
+							<Route exact path="/admin/config" component={AdminConfig} />
+							<Route
+								exact
+								path="/admin/change-password"
+								component={AdminChangePassword}
+							/>
+						</IonRouterOutlet>
+					) : (
+						<Redirect to="/login" />
+					)}
+				</Route>
 
-        {/* Root Redirect */}
-        <Route exact path="/">
-          {user ? <Redirect to="/tabs/home" /> : <Redirect to="/login" />}
-        </Route>
+				{/* Root Redirect */}
+				<Route exact path="/">
+					{user ? <Redirect to="/tabs/home" /> : <Redirect to="/login" />}
+				</Route>
 
-        {/* Fallback */}
-        <Route>
-          <Redirect to={user ? "/tabs/home" : "/login"} />
-        </Route>
-      </IonRouterOutlet>
+				{/* Fallback */}
+				<Route>
+					<Redirect to={user ? '/tabs/home' : '/login'} />
+				</Route>
+			</IonRouterOutlet>
 
-      {/* Global Loading Overlay */}
-      {isLoading && (
-        <div className="app-route-loading-overlay">
-          <div className="app-route-loading-card">
-            <IonSpinner name="crescent" />
-            <p>Loading your workspace...</p>
-          </div>
-        </div>
-      )}
-    </>
-  );
-};
+			{/* Global Loading Overlay */}
+			{isLoading && (
+				<div className="app-route-loading-overlay">
+					<div className="app-route-loading-card">
+						<IonSpinner name="crescent" />
+						<p>Loading your workspace...</p>
+					</div>
+				</div>
+			)}
+		</>
+	)
+}
 
 const App: React.FC = () => (
-  <IonApp>
-    <ThemeProvider>
-      <NavigationProvider>
-        <AuthProvider>
-          <IonReactRouter history={appHistory}>
-            <AppRoutes />
-          </IonReactRouter>
-        </AuthProvider>
-      </NavigationProvider>
-    </ThemeProvider>
-  </IonApp>
-);
+	<IonApp>
+		<ThemeProvider>
+			<NavigationProvider>
+				<AuthProvider>
+					<IonReactRouter history={appHistory}>
+						<AppRoutes />
+					</IonReactRouter>
+				</AuthProvider>
+			</NavigationProvider>
+		</ThemeProvider>
+	</IonApp>
+)
 
-export default App;
+export default App

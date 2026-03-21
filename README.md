@@ -189,9 +189,9 @@ The [`ionic.config.json`](ionic.config.json) file configures the Ionic framework
 
 ```json
 {
-  "name": "Magic App Dev",
-  "type": "react-vite",
-  "integrations": { "capacitor": {} }
+	"name": "Magic App Dev",
+	"type": "react-vite",
+	"integrations": {"capacitor": {}}
 }
 ```
 
