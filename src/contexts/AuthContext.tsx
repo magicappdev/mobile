@@ -298,9 +298,6 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
 				console.log('=== OAuth Callback Received (Listener) ===')
 				console.log('Deep link URL:', data.url)
 
-				// EXTREMELY LOUD DEBUGGING
-				alert(`Deep link received: ${data.url.substring(0, 50)}...`)
-
 				// Use a small delay to ensure the OS has finished the transition
 				setTimeout(async () => {
 					await handleDeepLink(data.url)
@@ -356,7 +353,10 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
 				const launchUrl = await App.getLaunchUrl()
 				if (launchUrl?.url) {
 					console.log('App launched with URL (cold start):', launchUrl.url)
-					alert(`Cold start URL: ${launchUrl.url.substring(0, 50)}...`)
+					console.log(
+						'Cold start URL (truncated):',
+						launchUrl.url.substring(0, 50) + '...',
+					)
 					const handled = await handleDeepLink(launchUrl.url)
 					if (handled) return // Stop if deep link was handled successfully
 				}
