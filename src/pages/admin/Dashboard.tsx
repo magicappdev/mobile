@@ -12,8 +12,8 @@ import {
 	IonHeader,
 	IonPage,
 	IonToolbar,
+	IonTitle,
 } from '@ionic/react'
-import {IonTitle} from '@ionic/react'
 import React from 'react'
 
 export default function AdminDashboard() {

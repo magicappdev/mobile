@@ -14,12 +14,12 @@ import {
 	IonRefresherContent,
 	IonSpinner,
 	RefresherEventDetail,
+	IonTitle,
 } from '@ionic/react'
 import {getProjectStatusMeta} from '../lib/project-status'
 import {add, build, chevronForward} from 'ionicons/icons'
 import React, {useState, useEffect} from 'react'
 import {useHistory} from 'react-router-dom'
-import {IonTitle} from '@ionic/react'
 import type {Project} from '../types'
 import {api} from '../lib/api'
 
