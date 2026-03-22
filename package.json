@@ -1,6 +1,6 @@
 {
 	"name": "@magicappdev/mobile",
-	"version": "0.0.16",
+	"version": "0.0.17",
 	"private": true,
 	"description": "An mobile app built with Ionic to build apps with MagicAppDev",
 	"type": "module",
