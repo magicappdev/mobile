@@ -96,6 +96,14 @@ The following npm scripts are available for local development and production bui
 - **`bun test.unit`**: Run unit tests using Vitest
 - **`bun test.e2e`**: Run end-to-end tests using Cypress
 
+### Release
+
+- **`bun run release`**: In the standalone `apps/mobile` repo, runs `bun run build`, stages mobile-repo changes, creates a `chore(release): v<version>` commit when needed, creates the `v<version>` tag from `package.json`, and pushes the branch and tag from that repo.
+- **`bun run release:dev`**: Same flow, but creates the `v<version>_dev` tag for a dev/mobile test release.
+- **`bun run release -- --dry-run --skip-build`**: Validate the git/tag flow without modifying git state.
+
+Release scripts are intended for the standalone `apps/mobile` repository checkout, not the monorepo root Git checkout. They push commits and tags from the mobile repo/workflow surface so the mobile release workflow can run on tags that match `v*`.
+
 ### Ionic-Specific Commands
 
 Additional Ionic CLI commands can be executed using bunx:
@@ -209,6 +217,7 @@ The [`vite.config.ts`](vite.config.ts) file configures the build tool with React
 - Run mobile scripts from `apps/mobile` unless a task explicitly says it spans the monorepo root.
 - Treat `apps/mobile/.github/workflows/` as the mobile repo workflow directory.
 - Do not assume root `.github/workflows/`, root `.env`, or root package scripts are the correct target for mobile-only changes.
+- Run `bun run release` for production tags in the form `v<version>` and `bun run release:dev` for dev tags in the form `v<version>_dev`.
 
 ### Local Development with Browser
 

@@ -41,6 +41,8 @@ bun dev
 bun android
 bun build
 bun ionic:sync
+bun run release
+bun run release:dev
 bun lint
 bun typecheck
 bun test.unit
@@ -64,3 +66,5 @@ apps/mobile/
 - If the request says "mobile repo," assume `apps/mobile`.
 - If a workflow path seems ambiguous, prefer `apps/mobile/.github/workflows/`.
 - If a command only makes sense from the monorepo root, say so explicitly instead of assuming it.
+- Mobile releases are repo-local: `bun run release` builds, commits if needed, and creates/pushes a `v<version>` tag, while `bun run release:dev` creates/pushes a `v<version>_dev` tag from the standalone mobile repo.
+- Use `bun run release -- --dry-run --skip-build` when you need to verify the release flow without changing git state.
