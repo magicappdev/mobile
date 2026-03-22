@@ -1,12 +1,32 @@
-import { spawnSync } from 'node:child_process'
-import { readFile } from 'node:fs/promises'
+import {spawnSync} from 'node:child_process'
+import {readFile} from 'node:fs/promises'
 import path from 'node:path'
 
 const repoRoot = path.resolve(process.cwd())
-const args = new Set(process.argv.slice(2))
+const rawArgs = process.argv.slice(2)
+const args = new Set()
+let versionOverride = null
+
+for (let index = 0; index < rawArgs.length; index += 1) {
+	const argument = rawArgs[index]
+
+	if (argument === '--version') {
+		const nextValue = rawArgs[index + 1]
+		if (!nextValue) {
+			throw new Error('Missing value for --version.')
+		}
+		versionOverride = nextValue
+		index += 1
+		continue
+	}
+
+	args.add(argument)
+}
+
 const isDevRelease = args.has('--dev')
 const isDryRun = args.has('--dry-run')
 const shouldSkipBuild = args.has('--skip-build')
+const expectsVersionTag = args.has('--expect-version-tag')
 
 if (args.has('--help')) {
 	console.log(`Usage: bun ./scripts/release.mjs [options]
@@ -88,7 +108,7 @@ async function main() {
 	const packageJson = JSON.parse(
 		await readFile(path.join(repoRoot, 'package.json'), 'utf8'),
 	)
-	const version = packageJson.version
+	const version = versionOverride ?? packageJson.version
 
 	if (typeof version !== 'string' || version.length === 0) {
 		throw new Error('package.json is missing a valid version.')
@@ -116,17 +136,35 @@ async function main() {
 		throw new Error('No git remote is configured for this repository.')
 	}
 
-	if (args.has('--dev')) {
-		const tagName = `v${version}${isDevRelease ? '_dev' : ''}`
-		if (runAllowFailure('git', ['tag', '-l', tagName]) === tagName) {
+	const tagName = `v${version}${isDevRelease ? '_dev' : ''}`
+	const localTagExists =
+		runAllowFailure('git', ['tag', '-l', tagName]) === tagName
+	let shouldCreateTag = isDevRelease
+
+	if (isDevRelease) {
+		if (localTagExists) {
 			throw new Error(`Tag ${tagName} already exists locally.`)
 		}
+	} else if (expectsVersionTag) {
+		if (localTagExists) {
+			console.log(
+				`[release] Reusing version tag ${tagName} created by bun pm version patch.`,
+			)
+		} else if (isDryRun) {
+			console.log(
+				`[release] dry-run: assuming bun pm version patch will create ${tagName}.`,
+			)
+		} else {
+			throw new Error(
+				`Expected version tag ${tagName} to exist after bun pm version patch.`,
+			)
+		}
+		shouldCreateTag = false
 	} else {
-		const tagName = `v${version}`
-		console.log(
-			'No tag creation needed since bun pm version already created a new version tag. Tag name:', tagName
-		)
-		
+		shouldCreateTag = !localTagExists
+		if (localTagExists) {
+			console.log(`[release] Reusing existing local tag ${tagName}.`)
+		}
 	}
 
 	if (
@@ -162,13 +200,19 @@ async function main() {
 	}
 
 	if (isDryRun) {
-		logPlannedAction(`git tag -a ${tagName} -m "Release ${tagName}"`)
+		if (shouldCreateTag) {
+			logPlannedAction(`git tag -a ${tagName} -m "Release ${tagName}"`)
+		} else {
+			logPlannedAction(`reuse existing local tag ${tagName}`)
+		}
 		logPlannedAction(`git push ${remote} ${branch}`)
 		logPlannedAction(`git push ${remote} ${tagName}`)
 	} else {
-		run('git', ['tag', '-a', tagName, '-m', `Release ${tagName}`], {
-			stdio: 'inherit',
-		})
+		if (shouldCreateTag) {
+			run('git', ['tag', '-a', tagName, '-m', `Release ${tagName}`], {
+				stdio: 'inherit',
+			})
+		}
 		run('git', ['push', remote, branch], {stdio: 'inherit'})
 		run('git', ['push', remote, tagName], {stdio: 'inherit'})
 	}
@@ -179,12 +223,17 @@ async function main() {
 			`Version: ${version}`,
 			`Branch: ${branch}`,
 			`Remote: ${remote}`,
+			shouldCreateTag
+				? `${isDryRun ? 'Would create' : 'Created'} a new release tag.`
+				: `${isDryRun ? 'Would reuse' : 'Reused'} the existing local tag.`,
 			shouldSkipBuild
 				? 'Build step skipped.'
 				: 'Build step completed before tagging.',
 			status
 				? 'Committed local changes before tagging.'
-				: 'No local changes to commit; tagged the current HEAD.',
+				: shouldCreateTag
+					? 'No local changes to commit; tagged the current HEAD.'
+					: 'No local changes to commit; pushed the existing tag target.',
 		].join('\n'),
 	)
 }

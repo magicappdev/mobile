@@ -43,18 +43,17 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Derive debug Android version
+      - name: Derive debug artifact metadata
+        id: metadata
         shell: bash
         run: |
-          PACKAGE_VERSION=$(node -p "require('./package.json').version")
-          VERSION_BASE=$(node -e "const version = require('./package.json').version; const parts = version.split('.').map((part) => { const match = part.match(/^(\d+)/); return match ? Number(match[1]) : 0; }); while (parts.length < 3) parts.push(0); process.stdout.write(String(parts[0] * 10000 + parts[1] * 100 + parts[2]));")
-          ANDROID_VERSION_NAME="${PACKAGE_VERSION}-debug.${GITHUB_RUN_NUMBER}"
-          ANDROID_VERSION_CODE=$((GITHUB_RUN_NUMBER * 1000 + VERSION_BASE))
+          set -euo pipefail
 
-          echo "PACKAGE_VERSION=${PACKAGE_VERSION}" >> "$GITHUB_ENV"
-          echo "ANDROID_VERSION_NAME=${ANDROID_VERSION_NAME}" >> "$GITHUB_ENV"
-          echo "ANDROID_VERSION_CODE=${ANDROID_VERSION_CODE}" >> "$GITHUB_ENV"
-          echo "DEBUG_ARTIFACT_NAME=mobile-debug-apk-${ANDROID_VERSION_NAME}" >> "$GITHUB_ENV"
+          package_version="$(node -p "require('./package.json').version")"
+          debug_artifact_name="mobile-debug-apk-${package_version}-run-${GITHUB_RUN_NUMBER}"
+
+          echo "package_version=${package_version}" >> "$GITHUB_OUTPUT"
+          echo "debug_artifact_name=${debug_artifact_name}" >> "$GITHUB_OUTPUT"
 
       - name: Build Web Assets
         run: bun run build
@@ -79,8 +78,6 @@ jobs:
           chmod +x ./gradlew
           ./gradlew assembleDebug --no-daemon --stacktrace
         env:
-          ANDROID_VERSION_NAME: ${{ env.ANDROID_VERSION_NAME }}
-          ANDROID_VERSION_CODE: ${{ env.ANDROID_VERSION_CODE }}
           GRADLE_OPTS: -Dorg.gradle.jvmargs="-Xmx4g -XX:MaxMetaspaceSize=1024m -XX:+HeapDumpOnOutOfMemoryError"
           ORG_GRADLE_PROJECT_jvmArgs: -Xmx4g -XX:MaxMetaspaceSize=1024m
           NODE_OPTIONS: '--max-old-space-size=4096'
@@ -88,7 +85,7 @@ jobs:
       - name: Upload debug APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ env.DEBUG_ARTIFACT_NAME }}
+          name: ${{ steps.metadata.outputs.debug_artifact_name }}
           path: android/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 14

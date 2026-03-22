@@ -98,9 +98,9 @@ The following npm scripts are available for local development and production bui
 
 ### Release
 
-- **`bun run release`**: In the standalone `apps/mobile` repo, runs `bun run build`, stages mobile-repo changes, creates a `chore(release): v<version>` commit when needed, creates the `v<version>` tag from `package.json`, and pushes the branch and tag from that repo.
-- **`bun run release:dev`**: Same flow, but creates the `v<version>_dev` tag for a dev/mobile test release.
-- **`bun run release -- --dry-run --skip-build`**: Validate the git/tag flow without modifying git state.
+- **`bun run release`**: In the standalone `apps/mobile` repo, auto-bumps the patch version, runs `bun run build`, stages mobile-repo changes, creates a `chore(release): v<version>` commit when needed, reuses the `v<version>` tag created by `bun pm version patch`, and pushes the branch and tag from that repo.
+- **`bun run release:dev`**: Same flow, but after the patch bump it creates and pushes a `v<version>_dev` tag for a dev/mobile test release.
+- **`bun run release -- --dry-run`**: Preview the next patch release flow without modifying git state.
 
 Release scripts are intended for the standalone `apps/mobile` repository checkout, not the monorepo root Git checkout. They push commits and tags from the mobile repo/workflow surface so the mobile release workflow can run on tags that match `v*`.
 
@@ -196,7 +196,7 @@ The [`capacitor.config.ts`](capacitor.config.ts) file defines app metadata and p
 
 ### Ionic Configuration
 
-The [`ionic.config.json`](ionic.config.json) file configures the Ionic framework:
+The [`ionic.config.json`](ionic.config.json) file configures Ionic CLI behavior only; it does not control Android `versionName` or `versionCode`:
 
 ```json
 {
@@ -205,6 +205,8 @@ The [`ionic.config.json`](ionic.config.json) file configures the Ionic framework
 	"integrations": {"capacitor": {}}
 }
 ```
+
+Android version metadata is sourced from [`android/app/build.gradle`](android/app/build.gradle), which derives its defaults from [`package.json`](package.json).
 
 ### Vite Configuration
 
