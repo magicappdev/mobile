@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Authentication Context Provider
  *
  * Manages user authentication state including:
@@ -54,6 +54,9 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
 	const [errorToast, setErrorToast] = useState<string | null>(null)
 	const hasNavigatedRef = useRef(false)
 	const processingDeepLinkRef = useRef(false)
+	const handleDeepLinkRef = useRef<(url: string) => Promise<boolean>>(
+		async () => false,
+	)
 	const {navigate} = useNavigation()
 
 	const handleLogout = async () => {
@@ -234,10 +237,10 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
 							const userData = await saveTokens(accessToken, refreshToken ?? '')
 							if (userData) {
 								console.log('OAuth (sessionId) succeeded, navigating...')
+								Browser.close()
 								setIsLoading(false)
 								processingDeepLinkRef.current = false
 								navigate('/tabs/home')
-								Browser.close()
 								return true
 							}
 						}
@@ -285,11 +288,17 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
 				return false
 			} catch (e) {
 				console.error('Failed to parse deep link URL:', e)
+				processingDeepLinkRef.current = false
+				setIsLoading(false)
 				return false
 			}
 		},
 		[navigate, saveTokens],
 	)
+
+	useEffect(() => {
+		handleDeepLinkRef.current = handleDeepLink
+	}, [])
 
 	// Handle navigation based on auth state
 	useEffect(() => {
@@ -351,7 +360,7 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
 			async (data: {url: string}) => {
 				console.log('=== OAuth Callback Received (Listener) ===')
 				console.log('Deep link URL:', data.url)
-				await handleDeepLink(data.url)
+				await handleDeepLinkRef.current(data.url)
 			},
 		)
 
@@ -407,7 +416,7 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
 						'Cold start URL (truncated):',
 						launchUrl.url.substring(0, 50) + '...',
 					)
-					const handled = await handleDeepLink(launchUrl.url)
+					const handled = await handleDeepLinkRef.current(launchUrl.url)
 					if (handled) return // Stop if deep link was handled successfully
 				}
 
@@ -422,11 +431,21 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
 
 		initialize()
 
+		// Safety timer: force-reset stuck loading state after 30 seconds
+		const safetyTimer = setTimeout(() => {
+			if (processingDeepLinkRef.current) {
+				console.warn('OAuth safety timer fired — resetting stuck loading state')
+				processingDeepLinkRef.current = false
+				setIsLoading(false)
+			}
+		}, 30_000)
+
 		return () => {
 			console.log('Removing App.appUrlOpen listener...')
+			clearTimeout(safetyTimer)
 			appUrlOpenListener.then(listener => listener.remove())
 		}
-	}, [handleDeepLink])
+	}, [])
 
 	// Check for OAuth callback in URL on load (web)
 	useEffect(() => {

@@ -94,11 +94,11 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-gradle-
 
-      - name: Build Android APK (Release)
+      - name: Build Android APK (Debug)
         working-directory: android
         run: |
           chmod +x gradlew
-          ./gradlew assembleRelease --no-daemon --stacktrace
+          ./gradlew assembleDebug --no-daemon --stacktrace
         env:
           GRADLE_OPTS: -Dorg.gradle.jvmargs="-Xmx4g -XX:MaxMetaspaceSize=1024m -XX:+HeapDumpOnOutOfMemoryError"
           ORG_GRADLE_PROJECT_jvmArgs: -Xmx4g -XX:MaxMetaspaceSize=1024m
@@ -108,4 +108,4 @@ jobs:
         uses: softprops/action-gh-release@v2
         if: github.ref_type == 'tag'
         with:
-          files: android/app/build/outputs/apk/release/*.apk
+          files: android/app/build/outputs/apk/debug/*.apk

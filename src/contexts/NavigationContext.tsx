@@ -5,7 +5,7 @@
  * (like AuthContext) to navigate using React Router v5.
  */
 
-import {createContext, useContext} from 'react'
+import {createContext, useCallback, useContext, useMemo} from 'react'
 import {appHistory} from '../lib/history'
 
 interface NavigationContextType {
@@ -17,12 +17,14 @@ const NavigationContext = createContext<NavigationContextType | undefined>(
 )
 
 export function NavigationProvider({children}: {children: React.ReactNode}) {
-	const navigate = (path: string) => {
+	const navigate = useCallback((path: string) => {
 		appHistory.push(path)
-	}
+	}, [])
+
+	const value = useMemo(() => ({navigate}), [navigate])
 
 	return (
-		<NavigationContext.Provider value={{navigate}}>
+		<NavigationContext.Provider value={value}>
 			{children}
 		</NavigationContext.Provider>
 	)
