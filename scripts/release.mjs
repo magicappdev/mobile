@@ -1,5 +1,5 @@
-import {spawnSync} from 'node:child_process'
-import {readFile} from 'node:fs/promises'
+import { spawnSync } from 'node:child_process'
+import { readFile } from 'node:fs/promises'
 import path from 'node:path'
 
 const repoRoot = path.resolve(process.cwd())
@@ -122,9 +122,11 @@ async function main() {
 			throw new Error(`Tag ${tagName} already exists locally.`)
 		}
 	} else {
+		const tagName = `v${version}`
 		console.log(
-			'No tag creation needed since bun pm version already created a new version tag.',
+			'No tag creation needed since bun pm version already created a new version tag. Tag name:', tagName
 		)
+		
 	}
 
 	if (
