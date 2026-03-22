@@ -116,9 +116,15 @@ async function main() {
 		throw new Error('No git remote is configured for this repository.')
 	}
 
-	const tagName = `v${version}${isDevRelease ? '_dev' : ''}`
-	if (runAllowFailure('git', ['tag', '-l', tagName]) === tagName) {
-		throw new Error(`Tag ${tagName} already exists locally.`)
+	if (args.has('--dev')) {
+		const tagName = `v${version}${isDevRelease ? '_dev' : ''}`
+		if (runAllowFailure('git', ['tag', '-l', tagName]) === tagName) {
+			throw new Error(`Tag ${tagName} already exists locally.`)
+		}
+	} else {
+		console.log(
+			'No tag creation needed since bun pm version already created a new version tag.',
+		)
 	}
 
 	if (
