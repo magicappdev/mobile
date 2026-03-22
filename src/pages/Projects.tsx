@@ -3,12 +3,17 @@
  */
 
 import {
+	IonAlert,
 	IonButton,
 	IonButtons,
 	IonContent,
 	IonHeader,
 	IonIcon,
+	IonItemOption,
+	IonItemOptions,
+	IonItemSliding,
 	IonPage,
+	IonToast,
 	IonToolbar,
 	IonRefresher,
 	IonRefresherContent,
@@ -16,8 +21,8 @@ import {
 	RefresherEventDetail,
 	IonTitle,
 } from '@ionic/react'
+import {add, build, chevronForward, trashOutline} from 'ionicons/icons'
 import {getProjectStatusMeta} from '../lib/project-status'
-import {add, build, chevronForward} from 'ionicons/icons'
 import React, {useState, useEffect} from 'react'
 import {useHistory} from 'react-router-dom'
 import type {Project} from '../types'
@@ -26,6 +31,9 @@ import {api} from '../lib/api'
 export default function Projects() {
 	const [projects, setProjects] = useState<Project[]>([])
 	const [isLoading, setIsLoading] = useState(true)
+	const [showCreateAlert, setShowCreateAlert] = useState(false)
+	const [projectToDelete, setProjectToDelete] = useState<Project | null>(null)
+	const [toast, setToast] = useState<{msg: string; color?: string} | null>(null)
 	const history = useHistory()
 	const createProjectRoute = `/tabs/chat?prompt=${encodeURIComponent('Help me create a new app and outline the first screen.')}`
 
@@ -36,18 +44,52 @@ export default function Projects() {
 			setProjects(data)
 		} catch (error) {
 			console.error('Failed to load projects:', error)
+			setToast({msg: 'Failed to load projects', color: 'danger'})
 		} finally {
 			setIsLoading(false)
 		}
 	}
 
 	useEffect(() => {
-		loadProjects()
+		void loadProjects()
 	}, [])
 
 	const handleRefresh = async (event: CustomEvent<RefresherEventDetail>) => {
 		await loadProjects()
 		event.detail.complete()
+	}
+
+	const handleCreateProject = async (name: string, description: string) => {
+		if (!name.trim()) return
+		try {
+			const project = await api.createProject({
+				name: name.trim(),
+				description: description.trim(),
+			})
+			setProjects(prev => [project, ...prev])
+			setToast({msg: `"${project.name}" created`, color: 'success'})
+			history.push(`/tabs/projects/${project.id}`)
+		} catch (e) {
+			setToast({
+				msg: e instanceof Error ? e.message : 'Failed to create project',
+				color: 'danger',
+			})
+		}
+	}
+
+	const handleDeleteProject = async (project: Project) => {
+		try {
+			await api.deleteProject(project.id)
+			setProjects(prev => prev.filter(p => p.id !== project.id))
+			setToast({msg: `"${project.name}" deleted`, color: 'medium'})
+		} catch (e) {
+			setToast({
+				msg: e instanceof Error ? e.message : 'Failed to delete project',
+				color: 'danger',
+			})
+		} finally {
+			setProjectToDelete(null)
+		}
 	}
 
 	const formatDate = (dateString: string) => {
@@ -63,7 +105,7 @@ export default function Projects() {
 				<IonToolbar>
 					<IonTitle>Projects</IonTitle>
 					<IonButtons slot="end">
-						<IonButton routerLink={createProjectRoute}>
+						<IonButton onClick={() => setShowCreateAlert(true)}>
 							<IonIcon slot="icon-only" icon={add} />
 						</IonButton>
 					</IonButtons>
@@ -88,6 +130,12 @@ export default function Projects() {
 							<IonButton routerLink={createProjectRoute}>
 								<IonIcon slot="start" icon={add} />
 								Create with AI
+							</IonButton>
+							<IonButton
+								fill="outline"
+								onClick={() => setShowCreateAlert(true)}
+							>
+								Quick Create
 							</IonButton>
 						</div>
 					</section>
@@ -125,44 +173,104 @@ export default function Projects() {
 								const statusMeta = getProjectStatusMeta(project.status)
 
 								return (
-									<button
-										key={project.id}
-										type="button"
-										className="app-project-card"
-										onClick={() => history.push(`/tabs/projects/${project.id}`)}
-									>
-										<div className="app-project-card-header">
-											<div>
-												<h2 className="app-project-card-title">
-													{project.name}
-												</h2>
-												<p className="app-project-card-copy">
-													{project.description || 'No description yet.'}
-												</p>
+									<IonItemSliding key={project.id}>
+										<button
+											type="button"
+											className="app-project-card"
+											onClick={() =>
+												history.push(`/tabs/projects/${project.id}`)
+											}
+										>
+											<div className="app-project-card-header">
+												<div>
+													<h2 className="app-project-card-title">
+														{project.name}
+													</h2>
+													<p className="app-project-card-copy">
+														{project.description || 'No description yet.'}
+													</p>
+												</div>
+												<span
+													className="app-status-pill"
+													style={{
+														background: statusMeta.background,
+														color: statusMeta.color,
+													}}
+												>
+													{statusMeta.label}
+												</span>
 											</div>
-											<span
-												className="app-status-pill"
-												style={{
-													background: statusMeta.background,
-													color: statusMeta.color,
-												}}
+											<div className="app-project-card-meta">
+												<span>Updated {formatDate(project.updatedAt)}</span>
+												<span>
+													Open details <IonIcon icon={chevronForward} />
+												</span>
+											</div>
+										</button>
+										<IonItemOptions side="end">
+											<IonItemOption
+												color="danger"
+												onClick={() => setProjectToDelete(project)}
 											>
-												{statusMeta.label}
-											</span>
-										</div>
-										<div className="app-project-card-meta">
-											<span>Updated {formatDate(project.updatedAt)}</span>
-											<span>
-												Open details <IonIcon icon={chevronForward} />
-											</span>
-										</div>
-									</button>
+												<IonIcon slot="icon-only" icon={trashOutline} />
+											</IonItemOption>
+										</IonItemOptions>
+									</IonItemSliding>
 								)
 							})}
 						</section>
 					)}
 				</div>
 			</IonContent>
+
+			<IonAlert
+				isOpen={showCreateAlert}
+				onDidDismiss={() => setShowCreateAlert(false)}
+				header="New Project"
+				inputs={[
+					{name: 'name', type: 'text', placeholder: 'Project name'},
+					{
+						name: 'description',
+						type: 'text',
+						placeholder: 'Short description (optional)',
+					},
+				]}
+				buttons={[
+					{text: 'Cancel', role: 'cancel'},
+					{
+						text: 'Create',
+						handler: (data: {name: string; description: string}) => {
+							void handleCreateProject(data.name, data.description ?? '')
+						},
+					},
+				]}
+			/>
+
+			<IonAlert
+				isOpen={projectToDelete !== null}
+				onDidDismiss={() => setProjectToDelete(null)}
+				header="Delete Project?"
+				message={`Delete "${projectToDelete?.name}"? This cannot be undone.`}
+				buttons={[
+					{text: 'Cancel', role: 'cancel'},
+					{
+						text: 'Delete',
+						role: 'destructive',
+						handler: () => {
+							if (projectToDelete) void handleDeleteProject(projectToDelete)
+						},
+					},
+				]}
+			/>
+
+			<IonToast
+				isOpen={toast !== null}
+				onDidDismiss={() => setToast(null)}
+				message={toast?.msg ?? ''}
+				duration={3000}
+				position="bottom"
+				color={toast?.color ?? 'primary'}
+			/>
 		</IonPage>
 	)
 }

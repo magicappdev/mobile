@@ -5,7 +5,13 @@
  * Compatible with browser environment (fetch API).
  */
 
-import type {AiMessage, Project, User} from '../types'
+import type {
+	AiMessage,
+	Project,
+	ProjectFile,
+	ProjectExport,
+	User,
+} from '../types'
 
 interface ApiSuccessResponse<T = unknown> {
 	success: true
@@ -179,6 +185,89 @@ export class ApiClient {
 		if (!response.success) {
 			throw new Error(response.error.message)
 		}
+	}
+
+	async updateProject(
+		id: string,
+		data: {name?: string; description?: string; status?: string},
+	): Promise<Project> {
+		const response = (await this.request(`/projects/${id}`, {
+			method: 'PATCH',
+			body: JSON.stringify(data),
+		})) as ApiResponse<Project>
+		if (!response.success) {
+			throw new Error(response.error.message)
+		}
+		return response.data
+	}
+
+	async getProjectFiles(projectId: string): Promise<ProjectFile[]> {
+		const response = (await this.request(
+			`/projects/${projectId}/files`,
+		)) as ApiResponse<{data: ProjectFile[]}>
+		if (!response.success) {
+			throw new Error(response.error.message)
+		}
+		return response.data.data
+	}
+
+	async saveProjectFile(
+		projectId: string,
+		file: {path: string; content: string; language?: string},
+	): Promise<ProjectFile> {
+		const response = (await this.request(`/projects/${projectId}/files`, {
+			method: 'POST',
+			body: JSON.stringify(file),
+		})) as ApiResponse<ProjectFile>
+		if (!response.success) {
+			throw new Error(response.error.message)
+		}
+		return response.data
+	}
+
+	async updateProjectFile(
+		projectId: string,
+		fileId: string,
+		data: {content?: string; path?: string; language?: string},
+	): Promise<ProjectFile> {
+		const response = (await this.request(
+			`/projects/${projectId}/files/${fileId}`,
+			{
+				method: 'PATCH',
+				body: JSON.stringify(data),
+			},
+		)) as ApiResponse<ProjectFile>
+		if (!response.success) {
+			throw new Error(response.error.message)
+		}
+		return response.data
+	}
+
+	async deleteProjectFile(projectId: string, path: string): Promise<void> {
+		const response = (await this.request(
+			`/projects/${projectId}/files?path=${encodeURIComponent(path)}`,
+			{method: 'DELETE'},
+		)) as ApiErrorResponse | ApiSuccessResponse<unknown>
+		if (!response.success) {
+			throw new Error(response.error.message)
+		}
+	}
+
+	async exportProject(projectId: string): Promise<ProjectExport> {
+		const response = (await this.request(
+			`/projects/${projectId}/export`,
+		)) as ApiResponse<ProjectExport>
+		if (!response.success) {
+			throw new Error(response.error.message)
+		}
+		return response.data
+	}
+
+	async saveGeneratedProject(
+		projectId: string,
+		files: Array<{path: string; content: string; language?: string}>,
+	): Promise<void> {
+		await Promise.all(files.map(file => this.saveProjectFile(projectId, file)))
 	}
 
 	async sendMessage(messages: AiMessage[]): Promise<string> {

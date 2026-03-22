@@ -53,6 +53,9 @@ import {AuthProvider, useAuth} from './contexts/AuthContext'
 import {ThemeProvider} from './contexts/ThemeContext'
 
 /* Pages */
+import ProjectWorkspace from './pages/ProjectWorkspace'
+import ProjectSettings from './pages/ProjectSettings'
+import ProjectPreview from './pages/ProjectPreview'
 import ProjectDetail from './pages/ProjectDetail'
 import Settings from './pages/Settings'
 import Register from './pages/Register'
@@ -83,6 +86,21 @@ const Tabs: React.FC = () => {
 				<Route exact path="/tabs/chat" component={Chat} />
 				<Route exact path="/tabs/projects" component={Projects} />
 				<Route exact path="/tabs/projects/:id" component={ProjectDetail} />
+				<Route
+					exact
+					path="/tabs/projects/:id/workspace"
+					component={ProjectWorkspace}
+				/>
+				<Route
+					exact
+					path="/tabs/projects/:id/preview"
+					component={ProjectPreview}
+				/>
+				<Route
+					exact
+					path="/tabs/projects/:id/settings"
+					component={ProjectSettings}
+				/>
 				<Route exact path="/tabs/settings" component={Settings} />
 				<Route exact path="/tabs" render={() => <Redirect to="/tabs/home" />} />
 			</IonRouterOutlet>
@@ -124,6 +142,27 @@ const AppRoutes: React.FC = () => {
 		<>
 			<IonRouterOutlet>
 				{/* Auth Routes */}
+				{/* /auth/callback is the landing path for web-mode OAuth redirects.
+				    AuthContext reads accessToken/refreshToken from window.location.search
+				    and navigates away — this route just prevents Ionic from redirecting
+				    to /login and stripping the query string. */}
+				<Route exact path="/auth/callback">
+					<div
+						style={{
+							display: 'flex',
+							flexDirection: 'column',
+							alignItems: 'center',
+							justifyContent: 'center',
+							height: '100vh',
+							gap: 16,
+						}}
+					>
+						<IonSpinner name="crescent" />
+						<p style={{margin: 0, color: 'var(--ion-color-medium)'}}>
+							Completing sign in…
+						</p>
+					</div>
+				</Route>
 				<Route exact path="/login">
 					{!user ? <Login /> : <Redirect to="/tabs/home" />}
 				</Route>

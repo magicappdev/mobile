@@ -31,3 +31,34 @@ export type Project = {
 	createdAt: string
 	updatedAt: string
 }
+
+export type ProjectFile = {
+	id: string
+	projectId: string
+	path: string
+	content: string
+	language: string
+	size: number
+	createdAt: string
+	updatedAt: string
+}
+
+export type ProjectExport = {
+	project: Project
+	files: ProjectFile[]
+	exportedAt: string
+}
+
+export type GeneratedFile = {
+	path: string
+	content: string
+	language: string
+}
+
+export type GeneratedProject = {
+	name: string
+	description: string
+	files: GeneratedFile[]
+	dependencies: Record<string, string>
+	projectId?: string
+}

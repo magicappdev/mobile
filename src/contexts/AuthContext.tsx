@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Authentication Context Provider
  *
  * Manages user authentication state including:
@@ -19,7 +19,9 @@ import React, {
 import {useNavigation} from './NavigationContext'
 import {api, type ApiResponse} from '../lib/api'
 import {Browser} from '@capacitor/browser'
+import {Capacitor} from '@capacitor/core'
 import {storage} from '../lib/storage'
+import {IonToast} from '@ionic/react'
 import {App} from '@capacitor/app'
 import type {User} from '../types'
 
@@ -49,6 +51,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined)
 export function AuthProvider({children}: {children: React.ReactNode}) {
 	const [user, setUser] = useState<User | null>(null)
 	const [isLoading, setIsLoading] = useState(true)
+	const [errorToast, setErrorToast] = useState<string | null>(null)
 	const hasNavigatedRef = useRef(false)
 	const processingDeepLinkRef = useRef(false)
 	const {navigate} = useNavigation()
@@ -85,13 +88,13 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
 				return userData
 			} catch (e) {
 				console.error('Failed to fetch user after login:', e)
-				alert(
+				setErrorToast(
 					`Authentication failed during profile fetch: ${e instanceof Error ? e.message : 'Unknown error'}`,
 				)
 				return null
 			}
 		},
-		[],
+		[setErrorToast],
 	)
 
 	const login = async (
@@ -172,12 +175,83 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
 					(url.pathname.includes('callback') || url.host.includes('callback'))
 
 				if (isAuthCallback) {
-					console.log('OAuth callback detected, processing tokens...')
+					console.log('OAuth callback detected, processing...')
 					processingDeepLinkRef.current = true
 					setIsLoading(true)
 
-					// Try to get tokens from both search params and hash fragment
 					const fragmentParams = new URLSearchParams(url.hash.substring(1))
+
+					const error =
+						url.searchParams.get('error') || fragmentParams.get('error')
+
+					if (error) {
+						console.error('OAuth error from URL:', error)
+						setErrorToast(`Login failed: ${error}`)
+						setIsLoading(false)
+						processingDeepLinkRef.current = false
+						return true
+					}
+
+					// Primary path: server-side session exchange via sessionId
+					const sessionId =
+						url.searchParams.get('sessionId') || fragmentParams.get('sessionId')
+
+					if (sessionId) {
+						console.log('Got sessionId, exchanging for tokens...')
+						const MAX_ATTEMPTS = 5
+						const POLL_INTERVAL_MS = 1500
+						let accessToken: string | null = null
+						let refreshToken: string | null = null
+
+						for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+							try {
+								console.log(
+									`checkOAuthSession attempt ${attempt}/${MAX_ATTEMPTS}`,
+								)
+								const result = await api.checkOAuthSession(sessionId)
+								if (result.success && result.data?.accessToken) {
+									accessToken = result.data.accessToken
+									refreshToken = result.data.refreshToken ?? null
+									break
+								}
+								// Session may still be pending; wait before retrying
+								if (attempt < MAX_ATTEMPTS) {
+									await new Promise(resolve =>
+										setTimeout(resolve, POLL_INTERVAL_MS),
+									)
+								}
+							} catch (e) {
+								console.warn(`checkOAuthSession error (attempt ${attempt}):`, e)
+								if (attempt < MAX_ATTEMPTS) {
+									await new Promise(resolve =>
+										setTimeout(resolve, POLL_INTERVAL_MS),
+									)
+								}
+							}
+						}
+
+						if (accessToken) {
+							const userData = await saveTokens(accessToken, refreshToken ?? '')
+							if (userData) {
+								console.log('OAuth (sessionId) succeeded, navigating...')
+								setIsLoading(false)
+								processingDeepLinkRef.current = false
+								navigate('/tabs/home')
+								Browser.close()
+								return true
+							}
+						}
+
+						console.error('OAuth session exchange failed — no tokens received')
+						setErrorToast(
+							'Login failed: unable to complete authentication. Please try again.',
+						)
+						setIsLoading(false)
+						processingDeepLinkRef.current = false
+						return true
+					}
+
+					// Fallback path: tokens sent directly in URL
 					const accessToken =
 						url.searchParams.get('accessToken') ||
 						url.searchParams.get('access_token') ||
@@ -190,38 +264,18 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
 						fragmentParams.get('refresh_token') ||
 						fragmentParams.get('refreshToken')
 
-					const error =
-						url.searchParams.get('error') || fragmentParams.get('error')
-
-					if (error) {
-						console.error('OAuth error from URL:', error)
-						alert(`Login failed: ${error}`)
-						setIsLoading(false)
-						processingDeepLinkRef.current = false
-						return true // We handled it, even if it's an error
-					}
-
 					if (accessToken && refreshToken) {
-						console.log('Starting session with received tokens...')
+						console.log('Starting session with direct tokens...')
 						const userData = await saveTokens(accessToken, refreshToken)
 						if (userData) {
-							console.log('OAuth successful, closing browser and navigating...')
+							console.log('OAuth (direct tokens) succeeded, navigating...')
 							Browser.close()
-
-							// CRITICAL: Set loading to false BEFORE navigating
-							// so the router is actually rendered and can handle the push
 							setIsLoading(false)
 							processingDeepLinkRef.current = false
-
-							console.log('Navigating to /tabs/home...')
 							navigate('/tabs/home')
 							return true
-						} else {
-							console.error('Failed to fetch user data with received tokens')
-							setIsLoading(false)
-							processingDeepLinkRef.current = false
-							return true
 						}
+						console.error('Failed to fetch user data with received tokens')
 					}
 
 					setIsLoading(false)
@@ -297,11 +351,7 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
 			async (data: {url: string}) => {
 				console.log('=== OAuth Callback Received (Listener) ===')
 				console.log('Deep link URL:', data.url)
-
-				// Use a small delay to ensure the OS has finished the transition
-				setTimeout(async () => {
-					await handleDeepLink(data.url)
-				}, 100)
+				await handleDeepLink(data.url)
 			},
 		)
 
@@ -399,46 +449,64 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
 	// GitHub OAuth
 	const loginWithGitHub = async () => {
 		try {
-			// Generate a state parameter to pass through OAuth
-			const state = JSON.stringify({
-				platform: 'mobile',
-				timestamp: Date.now(),
-			})
+			const isWeb = Capacitor.getPlatform() === 'web'
 
-			const authUrl = `https://magicappdev-api.magicappdev.workers.dev/auth/login/github?platform=mobile&state=${encodeURIComponent(state)}`
-
-			console.log('Opening GitHub OAuth URL:', authUrl)
-
-			// Open OAuth in browser
-			await Browser.open({url: authUrl})
-
-			console.log('Browser opened, waiting for OAuth callback...')
+			if (isWeb) {
+				// Web mode: redirect current tab so API can redirect back to us
+				const state = JSON.stringify({
+					platform: 'web',
+					timestamp: Date.now(),
+					webRedirectOrigin: window.location.origin,
+				})
+				const authUrl = `https://magicappdev-api.magicappdev.workers.dev/auth/login/github?platform=web&state=${encodeURIComponent(state)}`
+				console.log('Opening GitHub OAuth URL (web redirect):', authUrl)
+				window.location.href = authUrl
+			} else {
+				// Native mode: open in-app browser and wait for deep link
+				const state = JSON.stringify({
+					platform: 'mobile',
+					timestamp: Date.now(),
+				})
+				const authUrl = `https://magicappdev-api.magicappdev.workers.dev/auth/login/github?platform=mobile&state=${encodeURIComponent(state)}`
+				console.log('Opening GitHub OAuth URL:', authUrl)
+				await Browser.open({url: authUrl})
+				console.log('Browser opened, waiting for OAuth callback...')
+			}
 		} catch (error) {
 			console.error('Failed to open browser for GitHub login:', error)
-			alert('Unable to open GitHub login. Please try again.')
+			setErrorToast('Unable to open GitHub login. Please try again.')
 		}
 	}
 
 	// Discord OAuth
 	const loginWithDiscord = async () => {
 		try {
-			// Generate a state parameter to pass through OAuth
-			const state = JSON.stringify({
-				platform: 'mobile',
-				timestamp: Date.now(),
-			})
+			const isWeb = Capacitor.getPlatform() === 'web'
 
-			const authUrl = `https://magicappdev-api.magicappdev.workers.dev/auth/login/discord?platform=mobile&state=${encodeURIComponent(state)}`
-
-			console.log('Opening Discord OAuth URL:', authUrl)
-
-			// Open OAuth in browser
-			await Browser.open({url: authUrl})
-
-			console.log('Browser opened, waiting for OAuth callback...')
+			if (isWeb) {
+				// Web mode: redirect current tab so API can redirect back to us
+				const state = JSON.stringify({
+					platform: 'web',
+					timestamp: Date.now(),
+					webRedirectOrigin: window.location.origin,
+				})
+				const authUrl = `https://magicappdev-api.magicappdev.workers.dev/auth/login/discord?platform=web&state=${encodeURIComponent(state)}`
+				console.log('Opening Discord OAuth URL (web redirect):', authUrl)
+				window.location.href = authUrl
+			} else {
+				// Native mode: open in-app browser and wait for deep link
+				const state = JSON.stringify({
+					platform: 'mobile',
+					timestamp: Date.now(),
+				})
+				const authUrl = `https://magicappdev-api.magicappdev.workers.dev/auth/login/discord?platform=mobile&state=${encodeURIComponent(state)}`
+				console.log('Opening Discord OAuth URL:', authUrl)
+				await Browser.open({url: authUrl})
+				console.log('Browser opened, waiting for OAuth callback...')
+			}
 		} catch (error) {
 			console.error('Failed to open Discord login:', error)
-			alert('Unable to open Discord login. Please try again.')
+			setErrorToast('Unable to open Discord login. Please try again.')
 		}
 	}
 
@@ -455,6 +523,14 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
 			}}
 		>
 			{children}
+			<IonToast
+				isOpen={errorToast !== null}
+				onDidDismiss={() => setErrorToast(null)}
+				message={errorToast ?? ''}
+				duration={4000}
+				position="bottom"
+				color="danger"
+			/>
 		</AuthContext.Provider>
 	)
 }

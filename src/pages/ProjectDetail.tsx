@@ -23,9 +23,11 @@ import {
 	timeOutline,
 	codeOutline,
 	trashOutline,
-	settingsOutline,
 	checkmarkCircleOutline,
 	openOutline,
+	eyeOutline,
+	constructOutline,
+	settingsOutline,
 } from 'ionicons/icons'
 import React, {useState, useEffect, useCallback} from 'react'
 import {getProjectStatusMeta} from '../lib/project-status'
@@ -231,13 +233,66 @@ export default function ProjectDetail() {
 						</div>
 					</section>
 
+					{/* Workspace, Preview, Settings quick-access */}
 					<section className="app-card app-card-section">
 						<div style={{marginBottom: '16px'}}>
-							<h2 className="app-section-title">Actions</h2>
+							<h2 className="app-section-title">Workspace</h2>
 							<p className="app-subtle-text">
-								Open the live app, inspect the repository, or adjust app-level
-								settings from here.
+								Edit files, preview your app, or adjust project settings.
 							</p>
+						</div>
+						<div className="app-action-list">
+							<button
+								type="button"
+								className="app-action-link"
+								onClick={() =>
+									history.push(`/tabs/projects/${project.id}/workspace`)
+								}
+							>
+								<div>
+									<h3 className="app-section-title">Files</h3>
+									<p className="app-subtle-text">
+										Browse and edit project files
+									</p>
+								</div>
+								<IonIcon icon={constructOutline} />
+							</button>
+							<button
+								type="button"
+								className="app-action-link"
+								onClick={() =>
+									history.push(`/tabs/projects/${project.id}/preview`)
+								}
+							>
+								<div>
+									<h3 className="app-section-title">Preview</h3>
+									<p className="app-subtle-text">
+										Live preview of your project
+									</p>
+								</div>
+								<IonIcon icon={eyeOutline} />
+							</button>
+							<button
+								type="button"
+								className="app-action-link"
+								onClick={() =>
+									history.push(`/tabs/projects/${project.id}/settings`)
+								}
+							>
+								<div>
+									<h3 className="app-section-title">Settings</h3>
+									<p className="app-subtle-text">
+										Rename, configure, or delete
+									</p>
+								</div>
+								<IonIcon icon={settingsOutline} />
+							</button>
+						</div>
+					</section>
+
+					<section className="app-card app-card-section">
+						<div style={{marginBottom: '16px'}}>
+							<h2 className="app-section-title">Links</h2>
 						</div>
 						<div className="app-action-list">
 							{project.deploymentUrl && (
@@ -268,25 +323,12 @@ export default function ProjectDetail() {
 									<IonIcon icon={openOutline} />
 								</a>
 							)}
-							<button
-								type="button"
-								className="app-action-link"
-								onClick={() => history.push('/tabs/settings')}
-							>
-								<div>
-									<h3 className="app-section-title">App settings</h3>
-									<p className="app-subtle-text">
-										Manage preferences and linked accounts
-									</p>
+							{!project.deploymentUrl && !project.githubUrl && (
+								<div className="app-inline-note">
+									This project has not been deployed or connected to GitHub yet.
 								</div>
-								<IonIcon icon={settingsOutline} />
-							</button>
+							)}
 						</div>
-						{!project.deploymentUrl && !project.githubUrl && (
-							<div className="app-inline-note">
-								This project has not been deployed or connected to GitHub yet.
-							</div>
-						)}
 					</section>
 
 					<section className="app-card app-card-section">
@@ -295,9 +337,16 @@ export default function ProjectDetail() {
 							fill="outline"
 							color="danger"
 							onClick={() => setShowDeleteAlert(true)}
+							disabled={isDeleting}
 						>
-							<IonIcon slot="start" icon={trashOutline} />
-							Delete Project
+							{isDeleting ? (
+								<IonSpinner name="crescent" />
+							) : (
+								<>
+									<IonIcon slot="start" icon={trashOutline} />
+									Delete Project
+								</>
+							)}
 						</IonButton>
 					</section>
 				</div>
@@ -316,7 +365,7 @@ export default function ProjectDetail() {
 						{
 							text: 'Delete',
 							role: 'destructive',
-							handler: handleDelete,
+							handler: () => void handleDelete(),
 						},
 					]}
 				/>
