@@ -298,7 +298,7 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
 
 	useEffect(() => {
 		handleDeepLinkRef.current = handleDeepLink
-	}, [])
+	}, [handleDeepLink])
 
 	// Handle navigation based on auth state
 	useEffect(() => {
