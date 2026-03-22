@@ -1,4 +1,32 @@
+import groovy.json.JsonSlurper
+
 apply plugin: 'com.android.application'
+
+def packageJson = new JsonSlurper().parse(file('../../package.json'))
+def packageVersion = (packageJson.version ?: '1.0.0').toString()
+
+def deriveVersionCode = { String version ->
+    def parts = version.tokenize('.').collect { part ->
+        def match = (part =~ /^(\d+)/)
+        match ? Integer.parseInt(match[0][1]) : 0
+    }
+
+    while (parts.size() < 3) {
+        parts << 0
+    }
+
+    return (parts[0] * 10000) + (parts[1] * 100) + parts[2]
+}
+
+def resolveVersionValue = { String propertyName, String envName, defaultValue ->
+    def value = project.findProperty(propertyName) ?: System.getenv(envName)
+    return value != null && value.toString().trim() ? value : defaultValue
+}
+
+def defaultVersionName = packageVersion
+def defaultVersionCode = deriveVersionCode(packageVersion)
+def androidVersionName = resolveVersionValue('androidVersionName', 'ANDROID_VERSION_NAME', defaultVersionName).toString()
+def androidVersionCode = resolveVersionValue('androidVersionCode', 'ANDROID_VERSION_CODE', defaultVersionCode).toString().toInteger()
 
 android {
     namespace = "com.magicappdev"
@@ -7,8 +35,8 @@ android {
         applicationId "com.magicappdev"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
-        versionName "1.0"
+        versionCode androidVersionCode
+        versionName androidVersionName
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.

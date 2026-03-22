@@ -189,6 +189,75 @@ describe('AuthContext – handleDeepLink (appUrlOpen)', () => {
 		expect(mockNavigate).toHaveBeenCalledWith('/tabs/home')
 	})
 
+	it('ignores duplicate in-flight callbacks for the same sessionId', async () => {
+		type SessionCheckSuccess = {
+			success: boolean
+			data: {accessToken: string; refreshToken: string}
+		}
+
+		let resolveSessionCheck: ((value: SessionCheckSuccess) => void) | undefined
+
+		mockCheckOAuthSession.mockImplementation(
+			() =>
+				new Promise<{
+					success: boolean
+					data: {accessToken: string; refreshToken: string}
+				}>(resolve => {
+					resolveSessionCheck = resolve
+				}),
+		)
+
+		renderAuth()
+
+		expect(listenerState.current).not.toBeNull()
+		listenerState.current!({
+			url: 'magicappdev://auth/callback?sessionId=dup-sess',
+		})
+		for (let i = 0; i < 10; i++) {
+			await Promise.resolve()
+		}
+
+		listenerState.current!({
+			url: 'magicappdev://auth/callback?sessionId=dup-sess',
+		})
+		for (let i = 0; i < 10; i++) {
+			await Promise.resolve()
+		}
+
+		expect(mockCheckOAuthSession).toHaveBeenCalledTimes(1)
+
+		const finishSessionCheck = resolveSessionCheck
+		expect(finishSessionCheck).toBeDefined()
+
+		finishSessionCheck!({
+			success: true,
+			data: {accessToken: 'dup-acc', refreshToken: 'dup-ref'},
+		})
+		for (let i = 0; i < 20; i++) {
+			await Promise.resolve()
+		}
+		await vi.advanceTimersByTimeAsync(1_000)
+		await act(async () => {})
+
+		expect(mockStorageSet).toHaveBeenCalledWith('access_token', 'dup-acc')
+		expect(mockNavigate).toHaveBeenCalledWith('/tabs/home')
+	})
+
+	it('ignores callbacks for a sessionId that already completed successfully', async () => {
+		mockCheckOAuthSession.mockResolvedValueOnce({
+			success: true,
+			data: {accessToken: 'done-acc', refreshToken: 'done-ref'},
+		})
+
+		renderAuth()
+
+		await triggerDeepLink('magicappdev://auth/callback?sessionId=done-sess')
+		await triggerDeepLink('magicappdev://auth/callback?sessionId=done-sess')
+
+		expect(mockCheckOAuthSession).toHaveBeenCalledTimes(1)
+		expect(mockNavigate).toHaveBeenCalledWith('/tabs/home')
+	})
+
 	// ─ error in URL ────────────────────────────────────────────────────────
 
 	it('does not call checkOAuthSession when error param is in the URL', async () => {

@@ -54,8 +54,8 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
 	const [errorToast, setErrorToast] = useState<string | null>(null)
 	const hasNavigatedRef = useRef(false)
 	const processingDeepLinkRef = useRef(false)
-	const activeOAuthSessionIdRef = useRef<string | null>(null)
-	const lastCompletedOAuthSessionIdRef = useRef<string | null>(null)
+	const inFlightOAuthSessionIdsRef = useRef<Set<string>>(new Set())
+	const completedOAuthSessionIdsRef = useRef<Set<string>>(new Set())
 	const handleDeepLinkRef = useRef<(url: string) => Promise<boolean>>(
 		async () => false,
 	)
@@ -170,6 +170,7 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
 	const handleDeepLink = useCallback(
 		async (urlString: string): Promise<boolean> => {
 			console.log('Processing deep link URL:', urlString)
+			let claimedOAuthSessionId: string | null = null
 
 			try {
 				const url = new URL(urlString)
@@ -210,8 +211,8 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
 
 						if (sessionId) {
 							if (
-								sessionId === activeOAuthSessionIdRef.current ||
-								sessionId === lastCompletedOAuthSessionIdRef.current
+								inFlightOAuthSessionIdsRef.current.has(sessionId) ||
+								completedOAuthSessionIdsRef.current.has(sessionId)
 							) {
 								console.log(
 									'OAuth session callback already handled, ignoring duplicate',
@@ -220,7 +221,8 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
 								return true
 							}
 
-							activeOAuthSessionIdRef.current = sessionId
+							inFlightOAuthSessionIdsRef.current.add(sessionId)
+							claimedOAuthSessionId = sessionId
 							console.log('Got sessionId, exchanging for tokens...')
 							const MAX_ATTEMPTS = 5
 							const POLL_INTERVAL_MS = 1500
@@ -263,7 +265,7 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
 									refreshToken ?? '',
 								)
 								if (userData) {
-									lastCompletedOAuthSessionIdRef.current = sessionId
+									completedOAuthSessionIdsRef.current.add(sessionId)
 									console.log('OAuth (sessionId) succeeded, navigating...')
 									Browser.close()
 									navigate('/tabs/home')
@@ -307,7 +309,9 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
 
 						return true
 					} finally {
-						activeOAuthSessionIdRef.current = null
+						if (claimedOAuthSessionId) {
+							inFlightOAuthSessionIdsRef.current.delete(claimedOAuthSessionId)
+						}
 						processingDeepLinkRef.current = false
 						setIsLoading(false)
 					}
