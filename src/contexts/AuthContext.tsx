@@ -224,8 +224,8 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
 							inFlightOAuthSessionIdsRef.current.add(sessionId)
 							claimedOAuthSessionId = sessionId
 							console.log('Got sessionId, exchanging for tokens...')
-							const MAX_ATTEMPTS = 5
-							const POLL_INTERVAL_MS = 1500
+							const MAX_ATTEMPTS = 8
+							const POLL_INTERVAL_MS = 2000
 							let accessToken: string | null = null
 							let refreshToken: string | null = null
 
@@ -266,9 +266,48 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
 								)
 								if (userData) {
 									completedOAuthSessionIdsRef.current.add(sessionId)
-									console.log('OAuth (sessionId) succeeded, navigating...')
-									Browser.close()
-									navigate('/tabs/home')
+									console.log('OAuth (sessionId) succeeded, closing browser...')
+									await Browser.close()
+									// Do NOT navigate here: setIsLoading(false) in the finally block
+									// triggers the auth effect which handles navigation (same as email/password).
+									return true
+								}
+							}
+
+							// KV propagation may be slow; fall back to tokens embedded
+							// directly in the deep link URL (server now includes them).
+							if (!accessToken) {
+								const urlAccessToken =
+									url.searchParams.get('accessToken') ||
+									url.searchParams.get('access_token') ||
+									fragmentParams.get('accessToken') ||
+									fragmentParams.get('access_token')
+								const urlRefreshToken =
+									url.searchParams.get('refreshToken') ||
+									url.searchParams.get('refresh_token') ||
+									fragmentParams.get('refreshToken') ||
+									fragmentParams.get('refresh_token')
+								if (urlAccessToken) {
+									console.log(
+										'KV polling failed — using tokens embedded in URL',
+									)
+									accessToken = urlAccessToken
+									refreshToken = urlRefreshToken
+								}
+							}
+
+							if (accessToken) {
+								const userData = await saveTokens(
+									accessToken,
+									refreshToken ?? '',
+								)
+								if (userData) {
+									completedOAuthSessionIdsRef.current.add(sessionId)
+									console.log(
+										'OAuth (sessionId fallback) succeeded, closing browser...',
+									)
+									await Browser.close()
+									// Let the auth effect handle navigation after setIsLoading(false)
 									return true
 								}
 							}
@@ -299,9 +338,12 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
 							console.log('Starting session with direct tokens...')
 							const userData = await saveTokens(accessToken, refreshToken)
 							if (userData) {
-								console.log('OAuth (direct tokens) succeeded, navigating...')
-								Browser.close()
-								navigate('/tabs/home')
+								console.log(
+									'OAuth (direct tokens) succeeded, closing browser...',
+								)
+								await Browser.close()
+								// Do NOT navigate here: setIsLoading(false) in the finally block
+								// triggers the auth effect which handles navigation (same as email/password).
 								return true
 							}
 							console.error('Failed to fetch user data with received tokens')
@@ -324,7 +366,7 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
 				return false
 			}
 		},
-		[navigate, saveTokens],
+		[saveTokens],
 	)
 
 	useEffect(() => {
