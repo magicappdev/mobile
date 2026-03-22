@@ -54,6 +54,8 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
 	const [errorToast, setErrorToast] = useState<string | null>(null)
 	const hasNavigatedRef = useRef(false)
 	const processingDeepLinkRef = useRef(false)
+	const activeOAuthSessionIdRef = useRef<string | null>(null)
+	const lastCompletedOAuthSessionIdRef = useRef<string | null>(null)
 	const handleDeepLinkRef = useRef<(url: string) => Promise<boolean>>(
 		async () => false,
 	)
@@ -178,112 +180,137 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
 					(url.pathname.includes('callback') || url.host.includes('callback'))
 
 				if (isAuthCallback) {
+					if (processingDeepLinkRef.current) {
+						console.log(
+							'OAuth callback already in progress, ignoring duplicate',
+						)
+						return true
+					}
+
 					console.log('OAuth callback detected, processing...')
 					processingDeepLinkRef.current = true
 					setIsLoading(true)
 
-					const fragmentParams = new URLSearchParams(url.hash.substring(1))
+					try {
+						const fragmentParams = new URLSearchParams(url.hash.substring(1))
 
-					const error =
-						url.searchParams.get('error') || fragmentParams.get('error')
+						const error =
+							url.searchParams.get('error') || fragmentParams.get('error')
 
-					if (error) {
-						console.error('OAuth error from URL:', error)
-						setErrorToast(`Login failed: ${error}`)
-						setIsLoading(false)
-						processingDeepLinkRef.current = false
-						return true
-					}
-
-					// Primary path: server-side session exchange via sessionId
-					const sessionId =
-						url.searchParams.get('sessionId') || fragmentParams.get('sessionId')
-
-					if (sessionId) {
-						console.log('Got sessionId, exchanging for tokens...')
-						const MAX_ATTEMPTS = 5
-						const POLL_INTERVAL_MS = 1500
-						let accessToken: string | null = null
-						let refreshToken: string | null = null
-
-						for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
-							try {
-								console.log(
-									`checkOAuthSession attempt ${attempt}/${MAX_ATTEMPTS}`,
-								)
-								const result = await api.checkOAuthSession(sessionId)
-								if (result.success && result.data?.accessToken) {
-									accessToken = result.data.accessToken
-									refreshToken = result.data.refreshToken ?? null
-									break
-								}
-								// Session may still be pending; wait before retrying
-								if (attempt < MAX_ATTEMPTS) {
-									await new Promise(resolve =>
-										setTimeout(resolve, POLL_INTERVAL_MS),
-									)
-								}
-							} catch (e) {
-								console.warn(`checkOAuthSession error (attempt ${attempt}):`, e)
-								if (attempt < MAX_ATTEMPTS) {
-									await new Promise(resolve =>
-										setTimeout(resolve, POLL_INTERVAL_MS),
-									)
-								}
-							}
+						if (error) {
+							console.error('OAuth error from URL:', error)
+							setErrorToast(`Login failed: ${error}`)
+							return true
 						}
 
-						if (accessToken) {
-							const userData = await saveTokens(accessToken, refreshToken ?? '')
+						// Primary path: server-side session exchange via sessionId
+						const sessionId =
+							url.searchParams.get('sessionId') ||
+							fragmentParams.get('sessionId')
+
+						if (sessionId) {
+							if (
+								sessionId === activeOAuthSessionIdRef.current ||
+								sessionId === lastCompletedOAuthSessionIdRef.current
+							) {
+								console.log(
+									'OAuth session callback already handled, ignoring duplicate',
+									sessionId,
+								)
+								return true
+							}
+
+							activeOAuthSessionIdRef.current = sessionId
+							console.log('Got sessionId, exchanging for tokens...')
+							const MAX_ATTEMPTS = 5
+							const POLL_INTERVAL_MS = 1500
+							let accessToken: string | null = null
+							let refreshToken: string | null = null
+
+							for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+								try {
+									console.log(
+										`checkOAuthSession attempt ${attempt}/${MAX_ATTEMPTS}`,
+									)
+									const result = await api.checkOAuthSession(sessionId)
+									if (result.success && result.data?.accessToken) {
+										accessToken = result.data.accessToken
+										refreshToken = result.data.refreshToken ?? null
+										break
+									}
+									// Session may still be pending; wait before retrying
+									if (attempt < MAX_ATTEMPTS) {
+										await new Promise(resolve =>
+											setTimeout(resolve, POLL_INTERVAL_MS),
+										)
+									}
+								} catch (e) {
+									console.warn(
+										`checkOAuthSession error (attempt ${attempt}):`,
+										e,
+									)
+									if (attempt < MAX_ATTEMPTS) {
+										await new Promise(resolve =>
+											setTimeout(resolve, POLL_INTERVAL_MS),
+										)
+									}
+								}
+							}
+
+							if (accessToken) {
+								const userData = await saveTokens(
+									accessToken,
+									refreshToken ?? '',
+								)
+								if (userData) {
+									lastCompletedOAuthSessionIdRef.current = sessionId
+									console.log('OAuth (sessionId) succeeded, navigating...')
+									Browser.close()
+									navigate('/tabs/home')
+									return true
+								}
+							}
+
+							console.error(
+								'OAuth session exchange failed — no tokens received',
+							)
+							setErrorToast(
+								'Login failed: unable to complete authentication. Please try again.',
+							)
+							return true
+						}
+
+						// Fallback path: tokens sent directly in URL
+						const accessToken =
+							url.searchParams.get('accessToken') ||
+							url.searchParams.get('access_token') ||
+							fragmentParams.get('access_token') ||
+							fragmentParams.get('accessToken')
+
+						const refreshToken =
+							url.searchParams.get('refreshToken') ||
+							url.searchParams.get('refresh_token') ||
+							fragmentParams.get('refresh_token') ||
+							fragmentParams.get('refreshToken')
+
+						if (accessToken && refreshToken) {
+							console.log('Starting session with direct tokens...')
+							const userData = await saveTokens(accessToken, refreshToken)
 							if (userData) {
-								console.log('OAuth (sessionId) succeeded, navigating...')
+								console.log('OAuth (direct tokens) succeeded, navigating...')
 								Browser.close()
-								setIsLoading(false)
-								processingDeepLinkRef.current = false
 								navigate('/tabs/home')
 								return true
 							}
+							console.error('Failed to fetch user data with received tokens')
 						}
 
-						console.error('OAuth session exchange failed — no tokens received')
-						setErrorToast(
-							'Login failed: unable to complete authentication. Please try again.',
-						)
-						setIsLoading(false)
-						processingDeepLinkRef.current = false
 						return true
+					} finally {
+						activeOAuthSessionIdRef.current = null
+						processingDeepLinkRef.current = false
+						setIsLoading(false)
 					}
-
-					// Fallback path: tokens sent directly in URL
-					const accessToken =
-						url.searchParams.get('accessToken') ||
-						url.searchParams.get('access_token') ||
-						fragmentParams.get('access_token') ||
-						fragmentParams.get('accessToken')
-
-					const refreshToken =
-						url.searchParams.get('refreshToken') ||
-						url.searchParams.get('refresh_token') ||
-						fragmentParams.get('refresh_token') ||
-						fragmentParams.get('refreshToken')
-
-					if (accessToken && refreshToken) {
-						console.log('Starting session with direct tokens...')
-						const userData = await saveTokens(accessToken, refreshToken)
-						if (userData) {
-							console.log('OAuth (direct tokens) succeeded, navigating...')
-							Browser.close()
-							setIsLoading(false)
-							processingDeepLinkRef.current = false
-							navigate('/tabs/home')
-							return true
-						}
-						console.error('Failed to fetch user data with received tokens')
-					}
-
-					setIsLoading(false)
-					processingDeepLinkRef.current = false
-					return true
 				}
 				return false
 			} catch (e) {
