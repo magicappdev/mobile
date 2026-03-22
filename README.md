@@ -2,6 +2,8 @@
 
 A modern cross-platform mobile application built with Ionic Framework and Capacitor, providing on-the-go access to the MagicAppDev platform. The application features AI-powered chat, project management, and no-code app generation capabilities, mirroring the web interface functionality.
 
+> Repository boundary: treat `apps/mobile` as its own independent repo/workflow surface. When you are working on mobile-only tasks, paths and commands are relative to `apps/mobile`. Mobile GitHub Actions live under `apps/mobile/.github/workflows/` in the monorepo and should be interpreted as `.github/workflows/` for the mobile repo.
+
 ## Overview
 
 MagicAppDev Mobile enables users to interact with AI agents, manage projects, and generate applications from anywhere. Built on a React foundation with Ionic's UI components and Capacitor's native bridging, the app delivers a native-like experience while maintaining code sharing with the web platform.
@@ -45,6 +47,7 @@ Before you begin, ensure you have the following installed:
 
    ```bash
    git clone <repository-url>
+   cd magicappdev
    cd apps/mobile
    ```
 
@@ -61,7 +64,7 @@ Before you begin, ensure you have the following installed:
    ```
 
 4. **Configure environment variables**
-   Create a `.env` file in the project root with required API endpoints and keys.
+   Create a `.env` file in the mobile project root (`apps/mobile/.env`) with required API endpoints and keys.
 
 ## Development Scripts
 
@@ -200,6 +203,12 @@ The [`ionic.config.json`](ionic.config.json) file configures the Ionic framework
 The [`vite.config.ts`](vite.config.ts) file configures the build tool with React and legacy browser support.
 
 ## Development Workflow
+
+### Repo-Local Guardrails
+
+- Run mobile scripts from `apps/mobile` unless a task explicitly says it spans the monorepo root.
+- Treat `apps/mobile/.github/workflows/` as the mobile repo workflow directory.
+- Do not assume root `.github/workflows/`, root `.env`, or root package scripts are the correct target for mobile-only changes.
 
 ### Local Development with Browser
 

@@ -1,9 +1,9 @@
-name: Mobile Unsigned Release
+name: Mobile Release APK
 
 on:
   push:
     tags:
-      - "v*"
+      - 'v*'
   workflow_dispatch:
 
 permissions:
@@ -11,13 +11,13 @@ permissions:
 
 env:
   NODE_VERSION: 22
-  JAVA_VERSION: "21"
+  JAVA_VERSION: '21'
   BUN_VERSION: 1.3.10
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
-  build-unsigned-release:
-    name: Build Android unsigned release artifacts
+  build-testing-apk:
+    name: Build Android testing APK
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -43,7 +43,7 @@ jobs:
       - name: Setup Java JDK
         uses: actions/setup-java@6a0805fcefea3d4657a47ac4c165951e33482018 # v4.2.2
         with:
-          distribution: "temurin"
+          distribution: 'temurin'
           java-version: ${{ env.JAVA_VERSION }}
 
       - name: Setup Android SDK
@@ -87,7 +87,7 @@ jobs:
             artifact_suffix="${GITHUB_REF_NAME}"
           fi
 
-          artifact_base="magicappdev-android-release-unsigned-${artifact_suffix}"
+          artifact_base="magicappdev-android-testing-debug-${artifact_suffix}"
 
           echo "package_version=${package_version}" >> "${GITHUB_OUTPUT}"
           echo "android_version_name=${package_version}" >> "${GITHUB_OUTPUT}"
@@ -100,65 +100,52 @@ jobs:
       - name: Sync Capacitor Android project
         run: bunx cap sync android
 
-      - name: Build Android unsigned release APK and AAB
+      - name: Build Android testing APK
         run: |
           set -euo pipefail
           cd android
           chmod +x gradlew
-          ./gradlew --no-daemon --stacktrace assembleRelease bundleRelease
+          # Release APKs are unsigned by default in CI and are not installable for testing.
+          # Build the debug variant so the workflow always produces an installable APK.
+          ./gradlew --no-daemon --stacktrace assembleDebug
         env:
           ANDROID_VERSION_NAME: ${{ steps.versioning.outputs.android_version_name }}
           ANDROID_VERSION_CODE: ${{ steps.versioning.outputs.android_version_code }}
           GRADLE_OPTS: -Dorg.gradle.jvmargs="-Xmx4g -XX:MaxMetaspaceSize=1024m -XX:+HeapDumpOnOutOfMemoryError"
           NODE_OPTIONS: --max-old-space-size=4096
 
-      - name: Collect unsigned release artifacts
+      - name: Collect testing APK artifact
         id: artifacts
         run: |
           set -euo pipefail
 
           mkdir -p dist/release
 
-          apk_source="$(find android/app/build/outputs/apk/release -maxdepth 1 -type f -name '*.apk' | head -n 1)"
-          aab_source="$(find android/app/build/outputs/bundle/release -maxdepth 1 -type f -name '*.aab' | head -n 1)"
+          apk_source="android/app/build/outputs/apk/debug/app-debug.apk"
 
-          if [[ -z "${apk_source}" ]]; then
-            echo "Unsigned release APK not found." >&2
-            exit 1
-          fi
-
-          if [[ -z "${aab_source}" ]]; then
-            echo "Unsigned release AAB not found." >&2
+          if [[ ! -f "${apk_source}" ]]; then
+            echo "Installable debug APK not found at ${apk_source}." >&2
             exit 1
           fi
 
           apk_target="dist/release/${{ steps.versioning.outputs.artifact_base }}.apk"
-          aab_target="dist/release/${{ steps.versioning.outputs.artifact_base }}.aab"
 
           cp "${apk_source}" "${apk_target}"
-          cp "${aab_source}" "${aab_target}"
 
-          {
-            echo "apk_path=${apk_target}"
-            echo "aab_path=${aab_target}"
-          } >> "${GITHUB_OUTPUT}"
+          echo "apk_path=${apk_target}" >> "${GITHUB_OUTPUT}"
 
       - name: Upload workflow artifacts
         if: github.ref_type != 'tag'
         uses: actions/upload-artifact@v4
         with:
           name: ${{ steps.versioning.outputs.artifact_base }}
-          path: |
-            ${{ steps.artifacts.outputs.apk_path }}
-            ${{ steps.artifacts.outputs.aab_path }}
+          path: ${{ steps.artifacts.outputs.apk_path }}
           if-no-files-found: error
           retention-days: 14
 
-      - name: Attach artifacts to GitHub release
+      - name: Attach APK to GitHub release
         if: github.ref_type == 'tag'
         uses: softprops/action-gh-release@v2
         with:
-          files: |
-            ${{ steps.artifacts.outputs.apk_path }}
-            ${{ steps.artifacts.outputs.aab_path }}
+          files: ${{ steps.artifacts.outputs.apk_path }}
           fail_on_unmatched_files: true
