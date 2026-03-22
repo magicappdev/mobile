@@ -16,8 +16,8 @@
 		"lint": "eslint .",
 		"lint:fix": "eslint . --fix",
 		"preview": "vite preview",
-		"release": "bun ./scripts/release.mjs",
-		"release:dev": "bun ./scripts/release.mjs --dev",
+		"release": "bun pm version patch && bun ./scripts/release.mjs",
+		"release:dev": "bun pm version patch && bun ./scripts/release.mjs --dev",
 		"test.e2e": "cypress run",
 		"test.unit": "vitest",
 		"typecheck": "tsc --noEmit"
