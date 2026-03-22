@@ -76,6 +76,15 @@ function runAllowFailure(command, args) {
 	return (result.stdout || '').trim()
 }
 
+function hasStagedChanges() {
+	const result = spawnSync('git', ['diff', '--cached', '--quiet'], {
+		cwd: repoRoot,
+		windowsHide: true,
+	})
+
+	return result.status === 1
+}
+
 function normalizePath(value) {
 	return path.normalize(value)
 }
@@ -186,13 +195,18 @@ async function main() {
 		}
 	}
 
-	const status = run('git', ['status', '--porcelain'])
-	if (status) {
-		if (isDryRun) {
+	let committedChanges = false
+	if (isDryRun) {
+		const status = run('git', ['status', '--porcelain'])
+		if (status) {
 			logPlannedAction('git add -A')
 			logPlannedAction(`git commit -m "chore(release): ${tagName}"`)
-		} else {
-			run('git', ['add', '-A'], {stdio: 'inherit'})
+			committedChanges = true
+		}
+	} else {
+		run('git', ['add', '-A'], {stdio: 'inherit'})
+		if (hasStagedChanges()) {
+			committedChanges = true
 			run('git', ['commit', '-m', `chore(release): ${tagName}`], {
 				stdio: 'inherit',
 			})
@@ -229,7 +243,7 @@ async function main() {
 			shouldSkipBuild
 				? 'Build step skipped.'
 				: 'Build step completed before tagging.',
-			status
+			committedChanges
 				? 'Committed local changes before tagging.'
 				: shouldCreateTag
 					? 'No local changes to commit; tagged the current HEAD.'
